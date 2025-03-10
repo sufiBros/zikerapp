@@ -42,6 +42,8 @@ export default function TimerScreen({ plans, settings }) {
     setIsRunning(false);
     setIsStarting(false);
     setShowConfirmDialog(false);
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
     navigate('/');
   };
 
@@ -153,12 +155,17 @@ export default function TimerScreen({ plans, settings }) {
     if (!isRunning && !isStarting) {
       setIsStarting(true);
       // Play start audio first
-      playAudio(settings.audio.start?.[0]?.audio || 'start', () => {
+      if(settings.play_start){
+      playAudio(settings.audio.start || 'start', () => {
         setIsStarting(false);
         setIsRunning(true);
         // Start first interval audio after start audio
         playAudio(sequence[currentInterval]?.audioId || 'default_beep');
-      });
+      });}else{
+        setIsStarting(false);
+        setIsRunning(true);
+        playAudio(sequence[currentInterval]?.audioId || 'default_beep');
+      }
     } else {
       setIsRunning(false);
       setIsStarting(false);
@@ -194,8 +201,11 @@ export default function TimerScreen({ plans, settings }) {
             setCurrentInterval(nextInterval);
             playAudio(sequence[nextInterval]?.audioId || 'default_beep');
           } else {
-            setIsRunning(false);
-            playAudio(settings.audio.end?.[0]?.audio || 'end');
+            if(settings.play_end){
+            playAudio(settings.audio.end || 'end', () => {  setIsRunning(false);})}else{
+              setIsRunning(false);
+            }
+          
           }
           return 0;
         }

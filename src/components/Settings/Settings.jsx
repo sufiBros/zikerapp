@@ -4,28 +4,18 @@ import {
   Button,
   Container,
   Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Input,
-  IconButton
+  FormControlLabel,
+  Switch
 } from '@mui/material';
-import { Upload as UploadIcon, ArrowBack, Delete } from '@mui/icons-material';
+import { ArrowBack } from '@mui/icons-material';
 
 export default function Settings({ settings, setSettings }) {
   const navigate = useNavigate();
 
-  const updateAudio = (type, files) => {
+  const toggleAudio = (type) => {
     setSettings(prev => ({
       ...prev,
-      audio: {
-        ...prev.audio,
-        [type]: files.map(file => ({
-          id: file.name,
-          name: file.name.replace(/\.[^/.]+$/, ""),
-          file: URL.createObjectURL(file)
-        }))
-      }
+      [type]: !prev[type],
     }));
   };
 
@@ -46,80 +36,40 @@ export default function Settings({ settings, setSettings }) {
       <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Start Audio Section */}
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h6" gutterBottom>
-            Start Audio
-          </Typography>
-          <Input
-            accept="audio/*"
-            id="start-audio-upload"
-            type="file"
-            onChange={e => updateAudio('start', Array.from(e.target.files))}
-            sx={{ display: 'none' }}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={settings.play_start}
+                onChange={() => toggleAudio('play_start')}
+              />
+            }
+            label="Enable Start Audio"
           />
-          <label htmlFor="start-audio-upload">
-            <Button
-              variant="outlined"
-              component="span"
-              startIcon={<UploadIcon />}
-              fullWidth
-            >
-              Upload Start Audio
-            </Button>
-          </label>
-          
-          <List dense sx={{ mt: 2 }}>
-            {settings.audio.start.map(audio => (
-              <ListItem
-                key={audio.id}
-                secondaryAction={
-                  <IconButton edge="end" aria-label="delete">
-                    <Delete />
-                  </IconButton>
-                }
-              >
-                <ListItemText primary={audio.name} />
-              </ListItem>
-            ))}
-          </List>
+          <Typography variant="body2" color="textSecondary">
+            {settings.audio.start.enabled ? 
+              "Start audio will play when session begins" : 
+              "Start audio disabled"
+            }
+          </Typography>
         </Box>
 
         {/* End Audio Section */}
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h6" gutterBottom>
-            End Audio
-          </Typography>
-          <Input
-            accept="audio/*"
-            id="end-audio-upload"
-            type="file"
-            onChange={e => updateAudio('end', Array.from(e.target.files))}
-            sx={{ display: 'none' }}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={settings.play_end}
+                onChange={() => toggleAudio('play_end')}
+              />
+            }
+            label="Enable End Audio"
           />
-          <label htmlFor="end-audio-upload">
-            <Button
-              variant="outlined"
-              component="span"
-              startIcon={<UploadIcon />}
-              fullWidth
-            >
-              Upload End Audio
-            </Button>
-          </label>
-          
-          <List dense sx={{ mt: 2 }}>
-            {settings.audio.end.map(audio => (
-              <ListItem
-                key={audio.id}
-                secondaryAction={
-                  <IconButton edge="end" aria-label="delete">
-                    <Delete />
-                  </IconButton>
-                }
-              >
-                <ListItemText primary={audio.name} />
-              </ListItem>
-            ))}
-          </List>
+          <Typography variant="body2" color="textSecondary">
+            {settings.audio.end.enabled ? 
+              "End audio will play when session completes" : 
+              "End audio disabled"
+            }
+          </Typography>
         </Box>
       </Box>
     </Container>

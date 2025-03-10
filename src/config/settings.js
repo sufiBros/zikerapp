@@ -14,15 +14,17 @@ export const defaultSettings = {
         { id: 'M6', name: 'Masjid-e-Nabawi', audio: 'm6', defaultDuration: 60 },
     ],
     audio: {
-      start: 'start',
-      end: 'end',
-      raabta: 'r'
-    }
+        start: 'start',
+        end: 'end',
+        raabta: 'r',
+      },
+    play_start: true,
+    play_end:true
   };
 
   // In config/settings.js
 export const defaultPlan = {
-    name: "Default Plan",
+    name: "Testing Ziker (15 Seconds)",
     userLataif: Array.from({ length: 7 }, (_, i) => ({
       id: `L${i + 1}`,
       name: `Latifa ${i + 1}`,
