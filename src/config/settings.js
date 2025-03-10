@@ -31,7 +31,7 @@ export const defaultPlan = {
       duration: 2
     })),
     intermediate: { duration: 2, isAuto: false },
-    raabta: { duration: 10 },
+    raabta: { duration: 0 },
     muraqbat: [
       { id: 'M1', name: 'Ahdiyat', duration: 2 },
       { id: 'M2', name: 'Maiyyat', duration: 2 },
