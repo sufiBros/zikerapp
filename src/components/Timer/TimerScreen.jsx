@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { PlayArrow, Pause, SkipNext, ArrowBack } from '@mui/icons-material';
 import defaultBeep from '../../audio/default_beep.mp3';
+import { Howl, Howler } from 'howler';
 
 export default function TimerScreen({ plans, settings }) {
   const { planId } = useParams();
@@ -27,6 +28,29 @@ export default function TimerScreen({ plans, settings }) {
   const [isStarting, setIsStarting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const audioRef = useRef(null);
+  const wakeLockRef = useRef(null);
+
+  // Wake Lock handling
+  const requestWakeLock = async () => {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        wakeLockRef.current.addEventListener('release', () => {
+          console.log('Screen Wake Lock released');
+        });
+      }
+    } catch (err) {
+      console.error('Error requesting wake lock:', err);
+    }
+  };
+
+  const releaseWakeLock = () => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release();
+      wakeLockRef.current = null;
+    }
+  };
+
 
   // Back button handling
   const handleBack = () => {
@@ -42,8 +66,7 @@ export default function TimerScreen({ plans, settings }) {
     setIsRunning(false);
     setIsStarting(false);
     setShowConfirmDialog(false);
-    audioRef.current.pause();
-    audioRef.current.currentTime = 0;
+    Howler.stop();
     navigate('/');
   };
 
@@ -138,40 +161,62 @@ export default function TimerScreen({ plans, settings }) {
   const playAudio = (audioId, onEnd) => {
     const audioSource = getAudioSource(audioId);
     
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    
-    audioRef.current = new Audio(audioSource);
-    audioRef.current.play().catch(console.error);
-    
-    audioRef.current.onended = () => {
-      if (onEnd) onEnd();
-    };
+    Howler.stop(); // Stop any existing audio
+
+    const sound = new Howl({
+      src: [audioSource],
+      html5: true,
+      onend: onEnd,
+      onplayerror: () => {
+        sound.once('unlock', () => sound.play());
+      }
+    });
+
+    sound.play();
+    return sound;
   };
 
-  const handlePlayPause = () => {
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (wakeLockRef.current !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      releaseWakeLock();
+    };
+  }, []);
+
+  const handlePlayPause = async () => {
     if (!isRunning && !isStarting) {
       setIsStarting(true);
-      // Play start audio first
-      if(settings.play_start){
-      playAudio(settings.audio.start || 'start', () => {
-        setIsStarting(false);
-        setIsRunning(true);
-        // Start first interval audio after start audio
-        playAudio(sequence[currentInterval]?.audioId || 'default_beep');
-      });}else{
-        setIsStarting(false);
-        setIsRunning(true);
-        playAudio(sequence[currentInterval]?.audioId || 'default_beep');
-      }
+      
+      try {
+        await requestWakeLock();
+        console.log("")
+        if(settings.play_start){
+          playAudio(settings.audio.start || 'start', () => {
+            setIsStarting(false);
+            setIsRunning(true);
+            // Start first interval audio after start audio
+            playAudio(sequence[currentInterval]?.audioId || 'default_beep');
+          });}else{
+            setIsStarting(false);
+            setIsRunning(true);
+            playAudio(sequence[currentInterval]?.audioId || 'default_beep');
+          }
+        }catch (error) {
+          console.error('Error starting session:', error);
+          setIsStarting(false);
+        }
     } else {
       setIsRunning(false);
       setIsStarting(false);
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      Howler.stop();
+      releaseWakeLock();
     }
   };
 
@@ -216,6 +261,15 @@ export default function TimerScreen({ plans, settings }) {
 
   return () => clearInterval(timer);
 }, [isRunning, timeLeft, currentInterval, sequence, settings.audio.end]);
+
+ // Cleanup on unmount
+ useEffect(() => {
+  return () => {
+    releaseWakeLock();
+    Howler.unload();
+  };
+}, []);
+
   // Add formatTime function
   const formatTime = (seconds) => {
     const mins = Math.floor(Math.max(0, seconds) / 60);
