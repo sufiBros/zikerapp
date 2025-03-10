@@ -15,26 +15,7 @@ export default function App() {
     
     // Create default plan if no plans exist
     if (savedPlans.length === 0) {
-      return [{
-        name: "Testing Plan (15 Seconds)",
-        userLataif: Array.from({ length: 7 }, (_, i) => ({
-          id: `L${i + 1}`,
-          name: `Latifa ${i + 1}`,
-          duration: 2
-        })),
-        intermediate: { duration: 1, isAuto: false },
-        raabta: { duration: 0 },
-        muraqbat: [
-          { id: 'M1', name: 'Ahdiyat', duration: 2 },
-          { id: 'M2', name: 'Maiyyat', duration: 2 },
-          { id: 'M3', name: 'Aqrabiyat', duration: 2 },
-          { id: 'M4', name: 'Saer-e-Qaba', duration: 2 },
-          { id: 'M5', name: 'Roza-e-Athar', duration: 2 },
-          { id: 'M6', name: 'Masjid-e-Nabawi', duration: 2 },
-        ],
-        useStartAudio: true,
-        useEndAudio: true
-      }];
+      return [defaultPlan];
     }
     
     return savedPlans;

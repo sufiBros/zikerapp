@@ -24,7 +24,7 @@ export const defaultSettings = {
 
   // In config/settings.js
 export const defaultPlan = {
-    name: "Testing Ziker (15 Seconds)",
+    name: "Test Ziker (15 Seconds)",
     userLataif: Array.from({ length: 7 }, (_, i) => ({
       id: `L${i + 1}`,
       name: `Latifa ${i + 1}`,
