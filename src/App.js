@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { CssBaseline, Container } from '@mui/material';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { loadState, saveState } from './utils/storage';
-import { defaultSettings } from './config/settings';
+import { defaultLataifPlan, defaultMuraqbatPlan, defaultSettings } from './config/settings';
 import HomeScreen from './components/Home/HomeScreen';
 import PlanEditor from './components/PlanEditor/PlanEditor';
 import Settings from './components/Settings/Settings';
@@ -15,7 +15,7 @@ export default function App() {
     
     // Create default plan if no plans exist
     if (savedPlans.length === 0) {
-      return [defaultPlan];
+      return [defaultPlan,defaultLataifPlan, defaultMuraqbatPlan];
     }
     
     return savedPlans;

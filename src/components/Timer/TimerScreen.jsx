@@ -281,6 +281,9 @@ export default function TimerScreen({ plans, settings }) {
     if (currentInterval < sequence.length - 1) {
       const nextInterval = currentInterval + 1;
       setCurrentInterval(nextInterval);
+      if(!isRunning){
+        setIsRunning(true);
+      }
       setTimeLeft(sequence[nextInterval].duration);
       playAudio(sequence[nextInterval]?.audioId || 'default_beep');
     }

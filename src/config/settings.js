@@ -43,3 +43,38 @@ export const defaultPlan = {
     useStartAudio: true,
     useEndAudio: true
   };
+  export const defaultLataifPlan = {
+      name: "Lataif Ziker (15 Minute)",
+      userLataif: Array.from({ length: 7 }, (_, i) => ({
+        id: `L${i + 1}`,
+        name: `Latifa ${i + 1}`,
+        duration: 120
+      })),
+      intermediate: { duration: 30, isAuto: false },
+      raabta: { duration: 60 },
+      muraqbat: [
+      ],
+      useStartAudio: true,
+      useEndAudio: true
+    };
+
+export const defaultMuraqbatPlan = {
+  name: "Ziker & Muraqbat (28 Minutes)",
+  userLataif: Array.from({ length: 7 }, (_, i) => ({
+    id: `L${i + 1}`,
+    name: `Latifa ${i + 1}`,
+    duration: 120
+  })),
+  intermediate: { duration: 30, isAuto: false },
+  raabta: { duration: 0 },
+  muraqbat: [
+    { id: 'M1', name: 'Ahdiyat', duration: 120 },
+    { id: 'M2', name: 'Maiyyat', duration: 120 },
+    { id: 'M3', name: 'Aqrabiyat', duration: 120 },
+    { id: 'M4', name: 'Saer-e-Qaba', duration: 120 },
+    { id: 'M5', name: 'Roza-e-Athar', duration: 120 },
+    { id: 'M6', name: 'Masjid-e-Nabawi', duration: 120 },
+  ],
+  useStartAudio: true,
+  useEndAudio: true
+};
