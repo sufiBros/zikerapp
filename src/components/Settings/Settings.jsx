@@ -31,7 +31,7 @@ export default function Settings({ settings, setSettings }) {
       </Button>
 
       <Typography variant="h4" gutterBottom>
-        Application Settings
+        Settings
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', md: 'row' } }}>
