@@ -14,14 +14,14 @@ import {
   DialogActions,
   Button
 } from '@mui/material';
-import { PlayArrow, Pause, SkipNext, ArrowBack } from '@mui/icons-material';
+import { PlayArrow, Pause, SkipNext, SkipPrevious, ArrowBack } from '@mui/icons-material';
 import defaultBeep from '../../audio/default_beep.mp3';
 import { Howl, Howler } from 'howler';
 
-export default function TimerScreen({ plans, settings }) {
+export default function TimerScreen({ defaultPlans = [], userPlans = [], settings = {} }) {
   const { planId } = useParams();
   const navigate = useNavigate();
-  const plan = plans[planId];
+  const plan = [...userPlans,...defaultPlans].find(plan => plan.id == planId);
   const [isRunning, setIsRunning] = useState(false);
   const [currentInterval, setCurrentInterval] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -79,7 +79,7 @@ export default function TimerScreen({ plans, settings }) {
     if (!plan) return [];
     
     const seq = [];
-    
+
     // User Lataif
     seq.push(...(plan.userLataif?.map(l => {
       const latifaConfig = settings.lataif.find(lc => lc.id === l.id);
@@ -105,13 +105,13 @@ export default function TimerScreen({ plans, settings }) {
     // Raabta with helper text logic
     if (plan.userLataif?.length === 7 && plan.raabta) {
       if (plan.raabta.duration > 0) {
-        seq.push({
-          type: 'raabta',
-          name: 'Raabta',
+      seq.push({
+        type: 'raabta',
+        name: 'Raabta',
           duration: plan.raabta.duration,
           audioId: settings.audio.raabta || 'default_beep'
-        });
-      }
+      });
+    }
       // Don't add anything if duration is 0
     }
 
@@ -147,9 +147,7 @@ export default function TimerScreen({ plans, settings }) {
       ...settings.lataif,
       ...settings.muraqbat
     ];
-    
-    const foundAudio = allAudios.find(a => a.audio === audioId);
-    if (foundAudio?.file) return foundAudio.file;
+
 
     try {
       return require(`../../audio/${audioId}.mp3`);
@@ -162,7 +160,7 @@ export default function TimerScreen({ plans, settings }) {
     const audioSource = getAudioSource(audioId);
     
     Howler.stop(); // Stop any existing audio
-
+    console.log("playing",audioSource);
     const sound = new Howl({
       src: [audioSource],
       html5: true,
@@ -227,31 +225,31 @@ export default function TimerScreen({ plans, settings }) {
   }, [currentInterval, sequence, isRunning]);
 
   useEffect(() => {
-  let timer;
-  
-  if (isRunning && timeLeft > 0) {
-    timer = setInterval(() => {
-      setTimeLeft(prev => {
-        const newTime = prev - 1;
-        
-        if (newTime <= 0) {
-          let nextInterval = currentInterval + 1;
-          
-          // Skip any intervals with 0 duration
-          while (nextInterval < sequence.length && sequence[nextInterval].duration <= 0) {
-            nextInterval++;
-          }
+    let timer;
 
-          if (nextInterval < sequence.length) {
-            setCurrentInterval(nextInterval);
+    if (isRunning && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => {
+          const newTime = prev - 1;
+
+        if (newTime <= 0) {
+      let nextInterval = currentInterval + 1;
+      
+          // Skip any intervals with 0 duration
+      while (nextInterval < sequence.length && sequence[nextInterval].duration <= 0) {
+        nextInterval++;
+      }
+
+      if (nextInterval < sequence.length) {
+        setCurrentInterval(nextInterval);
             playAudio(sequence[nextInterval]?.audioId || 'default_beep');
-          } else {
+      } else {
             if(settings.play_end){
             playAudio(settings.audio.end || 'end', () => {  setIsRunning(false);})}else{
               setIsRunning(false);
-            }
+        }
           
-          }
+      }
           return 0;
         }
         return newTime;
@@ -259,16 +257,16 @@ export default function TimerScreen({ plans, settings }) {
     }, 1000);
   }
 
-  return () => clearInterval(timer);
+    return () => clearInterval(timer);
 }, [isRunning, timeLeft, currentInterval, sequence, settings.audio.end]);
 
  // Cleanup on unmount
- useEffect(() => {
-  return () => {
-    releaseWakeLock();
-    Howler.unload();
-  };
-}, []);
+  useEffect(() => {
+    return () => {
+      releaseWakeLock();
+      Howler.unload();
+    };
+  }, []);
 
   // Add formatTime function
   const formatTime = (seconds) => {
@@ -289,10 +287,24 @@ export default function TimerScreen({ plans, settings }) {
     }
   };
 
+  const handleSkipBack = () => {
+    if (currentInterval > 0) {
+      const prevInterval = currentInterval - 1;
+      setCurrentInterval(prevInterval);
+      setTimeLeft(sequence[prevInterval].duration);
+      playAudio(sequence[prevInterval].audioId);
+      if (!isRunning) setIsRunning(true);
+    }
+  };
+
+
   if (!plan) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Typography variant="h6">Plan not found</Typography>
+        <Button onClick={() => navigate('/')} sx={{ mt: 2 }}>
+          Return Home
+        </Button>
       </Container>
     );
   }
@@ -353,15 +365,22 @@ export default function TimerScreen({ plans, settings }) {
           <LinearProgress 
             variant="determinate" 
             value={progress}
-            sx={{ 
-              height: 10,
-              width: '80%',
-              borderRadius: 5
-            }}
+            sx={{ height: 10, width: '80%', borderRadius: 5 }}
           />
         </Box>
 
+        {/* Controls */}
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 4 }}>
+          <IconButton 
+            color="secondary" 
+            size="large"
+            sx={{ fontSize: '3rem' }}
+            onClick={handleSkipBack}
+            disabled={currentInterval <= 0}
+          >
+            <SkipPrevious fontSize="inherit" />
+          </IconButton>
+
           <IconButton 
             color="primary" 
             size="large"
@@ -377,7 +396,7 @@ export default function TimerScreen({ plans, settings }) {
               <PlayArrow fontSize="inherit" />
             )}
           </IconButton>
-          
+
           <IconButton 
             color="secondary" 
             size="large"

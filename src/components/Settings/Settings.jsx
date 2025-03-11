@@ -13,7 +13,7 @@ import { ArrowBack } from '@mui/icons-material';
 export default function Settings({ settings, setSettings }) {
   const navigate = useNavigate();
 
-  const toggleAudio = (type) => {
+  const toggle = (type) => {
     setSettings(prev => ({
       ...prev,
       [type]: !prev[type],
@@ -41,7 +41,7 @@ export default function Settings({ settings, setSettings }) {
             control={
               <Switch
                 checked={settings.play_start}
-                onChange={() => toggleAudio('play_start')}
+                onChange={() => toggle('play_start')}
               />
             }
             label="Enable Starting Dua"
@@ -60,7 +60,7 @@ export default function Settings({ settings, setSettings }) {
             control={
               <Switch
                 checked={settings.play_end}
-                onChange={() => toggleAudio('play_end')}
+                onChange={() => toggle('play_end')}
               />
             }
             label="Enable Shajrah Recitation"
@@ -72,6 +72,19 @@ export default function Settings({ settings, setSettings }) {
             }
           </Typography>
         </Box>
+
+{/* End Default Plans */}
+<Box sx={{ flex: 1 }}>
+  <FormControlLabel
+    control={
+      <Switch
+        checked={settings.showDefaultPlans}
+        onChange={() => toggle('showDefaultPlans')}
+      />
+    }
+    label="Show Default Plans"
+  />
+</Box>
       </Box>
     </Card>
   );

@@ -2,14 +2,7 @@ import { useState, useEffect } from 'react';
 import { CssBaseline, Container } from '@mui/material';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { loadState, saveState } from './utils/storage';
-import { 
-  defaultPlan, 
-  defaultLataifPlan, 
-  defaultShortPlan, 
-  defaultRegularPlan, 
-  defaultLongPlan, 
-  defaultSettings 
-} from './config/settings';
+import { DEFAULT_PLANS, defaultSettings } from './config/settings';
 import HomeScreen from './components/Home/HomeScreen';
 import PlanEditor from './components/PlanEditor/PlanEditor';
 import Settings from './components/Settings/Settings';
@@ -17,105 +10,111 @@ import TimerScreen from './components/Timer/TimerScreen';
 import defaultBeep from './audio/default_beep.mp3';
 
 export default function App() {
-  // Change this version whenever you update your default plans in code
-  const CURRENT_DEFAULT_VERSION = "1.1";
-  
-  // Get the current default plans from code
-  const currentDefaultPlans = [
-    defaultPlan,
-    defaultLataifPlan,
-    defaultShortPlan,
-    defaultRegularPlan,
-    defaultLongPlan
-  ];
+  // Default plans are static and always loaded from settings
+  const defaultPlans = DEFAULT_PLANS;
 
-  const [plans, setPlans] = useState(() => {
-    const savedPlans = loadState('zikr-plans') || [];
-    const savedDefaultVersion = loadState('zikr-defaultVersion');
-
-    // If no plans exist, use the current default plans
-    if (savedPlans.length === 0) {
-      saveState('zikr-defaultVersion', CURRENT_DEFAULT_VERSION);
-      return currentDefaultPlans;
+  // Load user plans, migrating old data if necessary
+  const [userPlans, setUserPlans] = useState(() => {
+    const oldPlans = loadState('zikr-plans'); // Legacy key
+    if (oldPlans) {
+      // Migrate old data: user plans are non-defaults
+      const migratedUserPlans = oldPlans.filter((plan) => !plan.isDefault);
+      saveState('zikr-user-plans', migratedUserPlans);
+      saveState('zikr-plans', null); // Clear legacy data
+      return migratedUserPlans;
     }
-    
-    // If the saved default version is outdated, update the default plans portion
-    if (savedDefaultVersion !== CURRENT_DEFAULT_VERSION) {
-      // Assume the first few plans are defaults and user plans follow
-      const newPlans = [
-        ...currentDefaultPlans, 
-        ...savedPlans.slice(currentDefaultPlans.length)
-      ];
-      saveState('zikr-defaultVersion', CURRENT_DEFAULT_VERSION);
-      return newPlans;
-    }
-    
-    // Otherwise, return the saved plans as is
-    return savedPlans;
+    return loadState('zikr-user-plans') || [];
   });
 
+  // Settings with audio initialization
   const [settings, setSettings] = useState(() => {
     const savedSettings = loadState('zikr-settings') || defaultSettings;
-    // Initialize default audio if missing
-    if (!savedSettings.audio.start.length) {
-      return {
-        ...savedSettings,
-        audio: {
-          start: [{ id: 'default', name: 'Default Beep', file: defaultBeep }],
-          end: [{ id: 'default', name: 'Default Beep', file: defaultBeep }]
-        }
-      };
-    }
-    return savedSettings;
+    return {
+      lataif: [],
+      muraqbat: [],
+      ...defaultSettings,
+      ...savedSettings
+    };
   });
 
-  // Persist data to localStorage
-  useEffect(() => {
-    saveState('zikr-plans', plans);
-    saveState('zikr-settings', settings);
-  }, [plans, settings]);
+  // Save user plans and settings
+  useEffect(() => saveState('zikr-user-plans', userPlans), [userPlans]);
+  useEffect(() => saveState('zikr-settings', settings), [settings]);
 
-  // Separate effect for audio initialization
-  useEffect(() => {
-    const initializeAudio = () => {
-      setSettings(prev => {
-        // Only update if audio settings are empty
-        if (prev.audio.start.length === 0 || prev.audio.end.length === 0) {
-          return {
-            ...prev,
-            audio: {
-              start: [{ id: 'default', name: 'Default Beep', file: defaultBeep }],
-              end: [{ id: 'default', name: 'Default Beep', file: defaultBeep }]
-            }
-          };
-        }
-        return prev;
-      });
+  // Clone a default plan into user plans
+  const clonePlan = (defaultPlan) => {
+    const newPlan = {
+      ...defaultPlan,
+      id: `${defaultPlan.id}-copy-${Date.now()}`, // Unique ID
+      isDefault: false,
+      name: `${defaultPlan.name} (Copy)`,
     };
+    setUserPlans((prev) => [...prev, newPlan]);
+  };
 
-    initializeAudio();
-  }, []); // Empty dependency array ensures this runs only once
+
+  // Delete a user plan
+  const deleteUserPlan = (planId) => {
+    setUserPlans((prev) => prev.filter((plan) => plan.id !== planId));
+  };
+
+
+  //Update a userPlan
+  const handleSavePlan = (updatedPlan) => {
+    setUserPlans(prev => {
+      // Check if this is an existing plan
+      const existingIndex = prev.findIndex(p => p.id === updatedPlan.id);
+      
+      if (existingIndex >= 0) {
+        // Update existing plan
+        const updated = [...prev];
+        updated[existingIndex] = updatedPlan;
+        return updated;
+      }
+      
+      // Add new plan
+      return [...prev, updatedPlan];
+    });
+  };
 
   return (
-    <Router>
-      <CssBaseline />
-      <Container maxWidth="md" sx={{ py: 3 }}>
         <Routes>
-          <Route path="/" element={<HomeScreen plans={plans} setPlans={setPlans} />} />
-          <Route 
-            path="/plan/:index" 
-            element={<PlanEditor plans={plans} setPlans={setPlans} settings={settings} />}
+          <Route
+            path="/"
+            element={
+              <HomeScreen
+                defaultPlans={defaultPlans}
+                userPlans={userPlans}
+                onClonePlan={clonePlan}
+                onDeletePlan={deleteUserPlan}
+                settings={settings}
+              />
+            }
           />
-          <Route 
-            path="/settings" 
+          <Route
+            path="/plan/:id"
+            element={
+              <PlanEditor
+                userPlans={userPlans}
+                onSavePlan={handleSavePlan}
+                settings={settings}
+              />
+            }
+          />
+          <Route
+            path="/settings"
             element={<Settings settings={settings} setSettings={setSettings} />}
           />
-          <Route 
-            path="/play/:planId" 
-            element={<TimerScreen plans={plans} settings={settings} />}
-          />
+          <Route
+          path="/play/:planId" 
+          element={
+            <TimerScreen
+              defaultPlans={defaultPlans}
+              userPlans={userPlans}
+              settings={settings}
+            />
+          }
+        />
         </Routes>
-      </Container>
-    </Router>
   );
 }
