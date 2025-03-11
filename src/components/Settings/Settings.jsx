@@ -43,12 +43,12 @@ export default function Settings({ settings, setSettings }) {
                 onChange={() => toggleAudio('play_start')}
               />
             }
-            label="Enable Start Audio"
+            label="Enable Starting Dua"
           />
           <Typography variant="body2" color="textSecondary">
-            {settings.audio.start.enabled ? 
-              "Start audio will play when session begins" : 
-              "Start audio disabled"
+            {settings.play_start ? 
+              "Starting Dua will play when session begins" : 
+              "Starting Dua disabled"
             }
           </Typography>
         </Box>
@@ -62,12 +62,12 @@ export default function Settings({ settings, setSettings }) {
                 onChange={() => toggleAudio('play_end')}
               />
             }
-            label="Enable End Audio"
+            label="Enable Shajrah Recitation"
           />
           <Typography variant="body2" color="textSecondary">
-            {settings.audio.end.enabled ? 
-              "End audio will play when session completes" : 
-              "End audio disabled"
+            {settings.play_end ? 
+              "Shajrah will play when session completes" : 
+              "Shajrah disabled"
             }
           </Typography>
         </Box>

@@ -33,7 +33,7 @@ export const defaultPlan = {
     intermediate: { duration: 2, isAuto: false },
     raabta: { duration: 0 },
     muraqbat: [
-      { id: 'M1', name: 'Ahdiyat', duration: 2 },
+      { id: 'M1', name: 'Ahdiyat', duration: 4 },
       { id: 'M2', name: 'Maiyyat', duration: 2 },
       { id: 'M3', name: 'Aqrabiyat', duration: 2 },
       { id: 'M4', name: 'Saer-e-Qaba', duration: 2 },
