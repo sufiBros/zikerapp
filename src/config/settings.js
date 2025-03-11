@@ -84,7 +84,7 @@ export const DEFAULT_PLANS = [
     useStartAudio: true,
     useEndAudio: true
   },
-  /*{
+  {
     id: 'default-regular',
     name: "Regular Ziker",
     isDefault: true,
@@ -106,7 +106,6 @@ export const DEFAULT_PLANS = [
     useStartAudio: true,
     useEndAudio: true
   },
-  */
   {
     id: 'default-long',
     name: "Long Ziker",
