@@ -8,6 +8,11 @@ import {
   CardContent,
   Paper,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import { PlayArrow, Edit, Delete, Settings, Add, ContentCopy,AccessTime } from '@mui/icons-material';
 
@@ -18,6 +23,8 @@ export default function HomeScreen({
   onDeletePlan,
   settings 
 }) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+const [deletePlanId, setDeletePlanId] = useState(null);
   const navigate = useNavigate();
   const [touchedId, setTouchedId] = useState(null);
 
@@ -51,6 +58,44 @@ export default function HomeScreen({
 
   return (
     <Box sx={{ position: 'relative' }}>
+      <>
+  {/* Your existing card code */}
+  <Dialog
+    open={deleteDialogOpen}
+    onClose={() => {
+      setDeleteDialogOpen(false);
+      setDeletePlanId(null);
+    }}
+  >
+    <DialogTitle>Confirm Delete</DialogTitle>
+    <DialogContent>
+      <DialogContentText>
+        Are you sure you want to delete this plan? This action cannot be undone.
+      </DialogContentText>
+    </DialogContent>
+    <DialogActions>
+      <Button 
+        onClick={() => {
+          setDeleteDialogOpen(false);
+          setDeletePlanId(null);
+        }}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={() => {
+          onDeletePlan(deletePlanId);
+          setDeleteDialogOpen(false);
+          setDeletePlanId(null);
+        }}
+        color="error"
+        autoFocus
+      >
+        Delete
+      </Button>
+    </DialogActions>
+  </Dialog>
+</>
       {/* Top Image Bar */}
       <Box sx={{ position: 'relative' }}>
         <img
@@ -143,25 +188,32 @@ export default function HomeScreen({
                         fontSize: '0.8rem'
                       }
                     }}>
-                      <Button
-                        onClick={() => navigate(`/play/${plan.id}`)}
-                        sx={{ color: 'primary.main' }}
-                      >
-                        Start
-                      </Button>
+                    <Button
+                      size="small"
+                      startIcon={<PlayArrow fontSize="small" />}
+                      onClick={() => navigate(`/play/${plan.id}`)}
+                    >
+                      Start
+                    </Button>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
                         <Button
+
+                        startIcon={<Edit fontSize="small" />}
                           onClick={() => navigate(`/plan/${plan.id}`)}
                           sx={{ color: 'text.secondary' }}
                         >
                           Edit
                         </Button>
                         <Button
-                          onClick={() => onDeletePlan(plan.id)}
-                          sx={{ color: 'error.main' }}
-                        >
-                          Delete
-                        </Button>
+  startIcon={<Delete fontSize="small" />}
+  onClick={() => {
+    setDeletePlanId(plan.id);
+    setDeleteDialogOpen(true);
+  }}
+  sx={{ color: 'error.main' }}
+>
+  Delete
+</Button>
                       </Box>
                     </CardActions>
                   </Card>
@@ -213,7 +265,7 @@ export default function HomeScreen({
                       {plan.name}
                     </Typography>
                     <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccessTime/>Total: {durations.total} | Lataif: {durations.lataif} | Muraqbat {durations.muraqbat}
+                      <AccessTime />Total: {durations.total} | Lataif: {durations.lataif} | Muraqbat {durations.muraqbat}
                     </Typography>
                   </CardContent>
                   <CardActions sx={{ 
