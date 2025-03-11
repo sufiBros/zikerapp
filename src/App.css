@@ -4,7 +4,12 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -moz-osx-font-smoothing: grayscale;  
+  background-image: url(${process.env.PUBLIC_URL}/di.png);
+  background-size: cover;       /* Makes the image cover the entire background */
+  background-repeat: no-repeat; /* Prevents the image from repeating */
+  background-attachment: fixed; /* Optional: fixes the background during scrolling */
+
 }
 
 /* Mobile-first approach */

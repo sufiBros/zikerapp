@@ -7,7 +7,8 @@ import {
   CardActions,
   CardContent,
   Grid,
-  Typography
+  Typography,
+  IconButton
 } from '@mui/material';
 import { PlayArrow, Edit, Delete, Settings } from '@mui/icons-material';
 
@@ -21,6 +22,15 @@ export default function HomeScreen({ plans, setPlans }) {
   };
 
   return (
+    <Box sx={{ position: 'relative' }}>
+    {/* Top Image Bar */}
+    <Box sx={{ position: 'relative' }}>
+        <img
+          src="app.png"
+          alt="Top Bar"
+          style={{ width: '100%', height: 'auto' }}
+        />
+      </Box>
     <Box sx={{ 
       p: 3,
       maxWidth: 800,
@@ -60,10 +70,40 @@ export default function HomeScreen({ plans, setPlans }) {
               onClick={() => navigate(`/plan/${index}`)}
             >
               <CardContent>
-                <Typography variant="h6">
-                  {plan.name || `Plan ${index + 1}`}
-                </Typography>
-              </CardContent>
+  <Typography variant="h6">
+    {plan.name || `Plan ${index + 1}`}
+  </Typography>
+<Typography variant="body2" color="textSecondary">
+    {(() => {
+      // Calculate Lataif duration including raabta and intermediate durations
+      const lataifDuration = (
+        (plan?.userLataif?.reduce((sum, l) => sum + (l.duration || 0), 0) || 0) +
+        (plan?.raabta?.duration || 0) +
+        (plan?.intermediate?.duration || 0)
+      );
+      
+      // Calculate Muraqbat duration
+      const muraqbatDuration = plan?.muraqbat?.reduce((sum, m) => sum + (m.duration || 0), 0) || 0;
+      
+      // Total duration is the sum of Lataif and Muraqbat durations
+      const totalSeconds = lataifDuration + muraqbatDuration;
+
+      // Helper function to format seconds as Hh Mm Ss
+      const formatDuration = (seconds) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return [
+          hours > 0 ? `${hours}h` : null,
+          minutes > 0 ? `${minutes}m` : null,
+          secs > 0 ? `${secs}s` : null
+        ].filter(Boolean).join(' ') || '0s';
+      };
+
+      return `Total: ${formatDuration(totalSeconds)} | Lataif: ${formatDuration(lataifDuration)} | Muraqbat: ${formatDuration(muraqbatDuration)}`;
+    })()}
+  </Typography>
+</CardContent>
               <CardActions sx={{ 
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -110,7 +150,7 @@ export default function HomeScreen({ plans, setPlans }) {
       {/* Settings Button */}
       <Box sx={{ mt: 4, textAlign: 'center' }}>
         <Button
-          variant="outlined"
+          variant="contained"
           startIcon={<Settings />}
           onClick={() => navigate('/settings')}
           sx={{ width: '100%', maxWidth: 200 }}
@@ -118,6 +158,7 @@ export default function HomeScreen({ plans, setPlans }) {
           Settings
         </Button>
       </Box>
+    </Box>
     </Box>
   );
 }

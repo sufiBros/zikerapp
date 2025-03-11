@@ -2,24 +2,58 @@ import { useState, useEffect } from 'react';
 import { CssBaseline, Container } from '@mui/material';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { loadState, saveState } from './utils/storage';
-import { defaultLataifPlan, defaultMuraqbatPlan, defaultSettings } from './config/settings';
+import { 
+  defaultPlan, 
+  defaultLataifPlan, 
+  defaultShortPlan, 
+  defaultRegularPlan, 
+  defaultLongPlan, 
+  defaultSettings 
+} from './config/settings';
 import HomeScreen from './components/Home/HomeScreen';
 import PlanEditor from './components/PlanEditor/PlanEditor';
 import Settings from './components/Settings/Settings';
 import TimerScreen from './components/Timer/TimerScreen';
 import defaultBeep from './audio/default_beep.mp3';
-import { defaultPlan } from './config/settings';
+
 export default function App() {
+  // Change this version whenever you update your default plans in code
+  const CURRENT_DEFAULT_VERSION = "1.1";
+  
+  // Get the current default plans from code
+  const currentDefaultPlans = [
+    defaultPlan,
+    defaultLataifPlan,
+    defaultShortPlan,
+    defaultRegularPlan,
+    defaultLongPlan
+  ];
+
   const [plans, setPlans] = useState(() => {
     const savedPlans = loadState('zikr-plans') || [];
-    
-    // Create default plan if no plans exist
+    const savedDefaultVersion = loadState('zikr-defaultVersion');
+
+    // If no plans exist, use the current default plans
     if (savedPlans.length === 0) {
-      return [defaultPlan,defaultLataifPlan, defaultMuraqbatPlan];
+      saveState('zikr-defaultVersion', CURRENT_DEFAULT_VERSION);
+      return currentDefaultPlans;
     }
     
+    // If the saved default version is outdated, update the default plans portion
+    if (savedDefaultVersion !== CURRENT_DEFAULT_VERSION) {
+      // Assume the first few plans are defaults and user plans follow
+      const newPlans = [
+        ...currentDefaultPlans, 
+        ...savedPlans.slice(currentDefaultPlans.length)
+      ];
+      saveState('zikr-defaultVersion', CURRENT_DEFAULT_VERSION);
+      return newPlans;
+    }
+    
+    // Otherwise, return the saved plans as is
     return savedPlans;
   });
+
   const [settings, setSettings] = useState(() => {
     const savedSettings = loadState('zikr-settings') || defaultSettings;
     // Initialize default audio if missing
@@ -77,9 +111,9 @@ export default function App() {
             element={<Settings settings={settings} setSettings={setSettings} />}
           />
           <Route 
-  path="/play/:planId" 
-  element={<TimerScreen plans={plans} settings={settings} />}
-/>
+            path="/play/:planId" 
+            element={<TimerScreen plans={plans} settings={settings} />}
+          />
         </Routes>
       </Container>
     </Router>

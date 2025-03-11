@@ -1,7 +1,10 @@
 /* index.css */
 /* Material UI already handles basic styles - focus on overrides */
 body {
-  background-color: #f5f5f5;
+  background-image: url('di.png');
+  background-size: cover;       /* Makes the image cover the entire background */
+  background-repeat: no-repeat; /* Prevents the image from repeating */
+  background-attachment: fixed; /* Optional: fixes the background during scrolling */
 }
 
 /* Custom overrides for Material UI components */
@@ -47,3 +50,4 @@ body {
 .MuiTypography-body1 {
   font-size: 1rem !important;
 }
+

@@ -24,7 +24,7 @@ export const defaultSettings = {
 
   // In config/settings.js
 export const defaultPlan = {
-    name: "Test Ziker (15 Seconds)",
+    name: "Test Ziker",
     userLataif: Array.from({ length: 7 }, (_, i) => ({
       id: `L${i + 1}`,
       name: `Latifa ${i + 1}`,
@@ -44,28 +44,50 @@ export const defaultPlan = {
     useEndAudio: true
   };
   export const defaultLataifPlan = {
-      name: "Lataif Ziker (15 Minute)",
+      name: "Lataif Ziker",
       userLataif: Array.from({ length: 7 }, (_, i) => ({
         id: `L${i + 1}`,
         name: `Latifa ${i + 1}`,
-        duration: 120
+        duration: 90
       })),
       intermediate: { duration: 30, isAuto: false },
-      raabta: { duration: 60 },
+      raabta: { duration: 30 },
       muraqbat: [
       ],
       useStartAudio: true,
       useEndAudio: true
     };
 
-export const defaultMuraqbatPlan = {
-  name: "Ziker & Muraqbat (28 Minutes)",
+
+    export const defaultShortPlan = {
+      name: "Short Ziker",
+      userLataif: Array.from({ length: 7 }, (_, i) => ({
+        id: `L${i + 1}`,
+        name: `Latifa ${i + 1}`,
+        duration: 60
+      })),
+      intermediate: { duration: 20, isAuto: false },
+      raabta: { duration: 0 },
+      muraqbat: [
+        { id: 'M1', name: 'Ahdiyat', duration: 60 },
+        { id: 'M2', name: 'Maiyyat', duration: 60 },
+        { id: 'M3', name: 'Aqrabiyat', duration: 60 },
+        { id: 'M4', name: 'Saer-e-Qaba', duration: 60 },
+        { id: 'M5', name: 'Roza-e-Athar', duration: 60 },
+        { id: 'M6', name: 'Masjid-e-Nabawi', duration: 60 },
+      ],
+      useStartAudio: true,
+      useEndAudio: true
+    };
+
+export const defaultRegularPlan = {
+  name: "Regular Ziker",
   userLataif: Array.from({ length: 7 }, (_, i) => ({
     id: `L${i + 1}`,
     name: `Latifa ${i + 1}`,
     duration: 120
   })),
-  intermediate: { duration: 30, isAuto: false },
+  intermediate: { duration: 40, isAuto: false },
   raabta: { duration: 0 },
   muraqbat: [
     { id: 'M1', name: 'Ahdiyat', duration: 120 },
@@ -73,7 +95,28 @@ export const defaultMuraqbatPlan = {
     { id: 'M3', name: 'Aqrabiyat', duration: 120 },
     { id: 'M4', name: 'Saer-e-Qaba', duration: 120 },
     { id: 'M5', name: 'Roza-e-Athar', duration: 120 },
-    { id: 'M6', name: 'Masjid-e-Nabawi', duration: 120 },
+    { id: 'M6', name: 'Masjid-e-Nabawi', duration: 180 },
+  ],
+  useStartAudio: true,
+  useEndAudio: true
+};
+
+export const defaultLongPlan = {
+  name: "Long Ziker",
+  userLataif: Array.from({ length: 7 }, (_, i) => ({
+    id: `L${i + 1}`,
+    name: `Latifa ${i + 1}`,
+    duration: 180
+  })),
+  intermediate: { duration: 40, isAuto: false },
+  raabta: { duration: 0 },
+  muraqbat: [
+    { id: 'M1', name: 'Ahdiyat', duration: 180 },
+    { id: 'M2', name: 'Maiyyat', duration: 180 },
+    { id: 'M3', name: 'Aqrabiyat', duration: 180 },
+    { id: 'M4', name: 'Saer-e-Qaba', duration: 180 },
+    { id: 'M5', name: 'Roza-e-Athar', duration: 180 },
+    { id: 'M6', name: 'Masjid-e-Nabawi', duration: 180 },
   ],
   useStartAudio: true,
   useEndAudio: true
