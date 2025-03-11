@@ -5,7 +5,8 @@ import {
   Container,
   Typography,
   FormControlLabel,
-  Switch
+  Switch,
+  Card
 } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 
@@ -20,7 +21,7 @@ export default function Settings({ settings, setSettings }) {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Card maxWidth="md" sx={{ p: 4 }}>
       <Button
         startIcon={<ArrowBack />}
         onClick={() => navigate('/')}
@@ -72,6 +73,6 @@ export default function Settings({ settings, setSettings }) {
           </Typography>
         </Box>
       </Box>
-    </Container>
+    </Card>
   );
 }

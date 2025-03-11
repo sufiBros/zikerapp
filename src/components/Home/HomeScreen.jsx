@@ -8,9 +8,9 @@ import {
   CardContent,
   Grid,
   Typography,
-  IconButton
+  IconButton,
 } from '@mui/material';
-import { PlayArrow, Edit, Delete, Settings } from '@mui/icons-material';
+import { PlayArrow, Edit, Delete, Settings, Add } from '@mui/icons-material';
 
 export default function HomeScreen({ plans, setPlans }) {
   const navigate = useNavigate();
@@ -36,20 +36,29 @@ export default function HomeScreen({ plans, setPlans }) {
       maxWidth: 800,
       margin: '0 auto'
     }}>
-      {/* Header */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Typography variant="h4" gutterBottom>
-          Ziker Qalbi Plans
-        </Typography>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={() => navigate('/plan/new')}
-          fullWidth
-        >
-          Create New Plan
-        </Button>
-      </Box>
+<Box sx={{ mb: 4, textAlign: 'center' }}>
+  <Typography variant="h4" gutterBottom>
+    Ziker Qalbi Plans
+  </Typography>
+  <Box sx={{ display: 'inline-flex', gap: 2 }}>
+    <Button
+      variant="contained"
+      onClick={() => navigate('/plan/new')}
+      startIcon={<Add />}
+    >
+      Create New Plan
+    </Button>
+          {/* Settings Button */}
+    <Button
+      variant="contained"
+      startIcon={<Settings />}
+      onClick={() => navigate('/settings')}
+    >
+      Settings
+    </Button>
+  </Box>
+</Box>
+
 
       {/* Plan Cards Grid */}
       <Grid container spacing={2}>
@@ -146,18 +155,6 @@ export default function HomeScreen({ plans, setPlans }) {
           </Grid>
         ))}
       </Grid>
-
-      {/* Settings Button */}
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Button
-          variant="contained"
-          startIcon={<Settings />}
-          onClick={() => navigate('/settings')}
-          sx={{ width: '100%', maxWidth: 200 }}
-        >
-          Settings
-        </Button>
-      </Box>
     </Box>
     </Box>
   );
