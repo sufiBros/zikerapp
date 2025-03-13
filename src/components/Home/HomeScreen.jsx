@@ -12,9 +12,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Snackbar,
+  Alert,
+  Tooltip,
+  Badge
 } from '@mui/material';
-import { PlayArrow, Edit, Delete, Settings, Add, ContentCopy,AccessTime } from '@mui/icons-material';
+import { PlayArrow, Edit, Delete, Settings, Add, ContentCopy, AccessTime } from '@mui/icons-material';
 
 export default function HomeScreen({ 
   defaultPlans,
@@ -24,16 +28,48 @@ export default function HomeScreen({
   settings 
 }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-const [deletePlanId, setDeletePlanId] = useState(null);
-  const navigate = useNavigate();
+  const [deletePlanId, setDeletePlanId] = useState(null);
   const [touchedId, setTouchedId] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const navigate = useNavigate();
 
+  // Section header with count badge
+  const SectionHeader = ({ title, count, color = 'primary' }) => (
+    <Box sx={{ 
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      mb: 2,
+      p: 1,
+      bgcolor: (theme) => theme.palette[color].light + '80',
+      borderRadius: 2
+    }}>
+      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        {title}
+      </Typography>
+      <Badge
+        badgeContent={count}
+        color={color}
+        showZero={true} // This ensures 0 is displayed
+        sx={{
+          '& .MuiBadge-badge': {
+            fontSize: '0.8rem',
+            minWidth: 24,
+            height: 24,
+            borderRadius: 12,
+            padding: '0 8px',
+            position: 'static',
+            transform: 'none',
+          }
+        }}
+      />
+    </Box>
+  );
   const getPlanDurations = (plan) => {
     const lataifDuration = (
       (plan?.userLataif?.reduce((sum, l) => sum + (l.duration || 0), 0) || 0) +
       (plan?.raabta?.duration || 0) +
-      (plan?.intermediate?.duration || 0)
-    );
+      (plan?.intermediate?.duration || 0));
     
     const muraqbatDuration = plan?.muraqbat?.reduce((sum, m) => sum + (m.duration || 0), 0) || 0;
     const totalSeconds = lataifDuration + muraqbatDuration;
@@ -56,70 +92,66 @@ const [deletePlanId, setDeletePlanId] = useState(null);
     };
   };
 
+  const handleClonePlan = (plan) => {
+    onClonePlan(plan);
+    setSnackbarOpen(true);
+  };
+
   return (
-    <Box sx={{ position: 'relative' }}>
-      <>
-  {/* Your existing card code */}
-  <Dialog
-    open={deleteDialogOpen}
-    onClose={() => {
-      setDeleteDialogOpen(false);
-      setDeletePlanId(null);
-    }}
-  >
-    <DialogTitle>Confirm Delete</DialogTitle>
-    <DialogContent>
-      <DialogContentText>
-        Are you sure you want to delete this plan? This action cannot be undone.
-      </DialogContentText>
-    </DialogContent>
-    <DialogActions>
-      <Button 
-        onClick={() => {
+    <Box sx={{ position: 'relative', pb: 3 }}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => {
           setDeleteDialogOpen(false);
           setDeletePlanId(null);
         }}
       >
-        Cancel
-      </Button>
-      <Button
-        onClick={() => {
-          onDeletePlan(deletePlanId);
-          setDeleteDialogOpen(false);
-          setDeletePlanId(null);
-        }}
-        color="error"
-        autoFocus
-      >
-        Delete
-      </Button>
-    </DialogActions>
-  </Dialog>
-</>
-      {/* Top Image Bar */}
+        <DialogTitle>Delete Plan?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this plan? This cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              onDeletePlan(deletePlanId);
+              setDeleteDialogOpen(false);
+            }}
+            color="error"
+            autoFocus
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Top Image */}
       <Box sx={{ position: 'relative' }}>
         <img
           src="app.png"
-          alt="Top Bar"
+          alt="Header"
           style={{ width: '100%', height: 'auto' }}
         />
       </Box>
-  
-      <Box sx={{ 
-        p: 3,
-        maxWidth: 800,
-        margin: '0 auto'
-      }}>
+
+      {/* Main Content */}
+      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 800, mx: 'auto' }}>
         {/* Header Section */}
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <Box sx={{ mb: 3, textAlign: 'center' }}>
           <Typography variant="h4" gutterBottom>
             Ziker Qalbi Plans
           </Typography>
-          <Box sx={{ display: 'inline-flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
             <Button
               variant="contained"
               onClick={() => navigate('/plan/new')}
               startIcon={<Add />}
+              sx={{ fontSize: '1.1rem', borderRadius: 2 }}
             >
               Create New Plan
             </Button>
@@ -127,34 +159,35 @@ const [deletePlanId, setDeletePlanId] = useState(null);
               variant="contained"
               startIcon={<Settings />}
               onClick={() => navigate('/settings')}
+              sx={{ fontSize: '1.1rem', borderRadius: 2 }}
             >
               Settings
             </Button>
           </Box>
         </Box>
-  
+
         {/* User Plans Section */}
-        {userPlans.length > 0 && (
-          <Paper sx={{ 
-            mt: 4,
-            backgroundColor: (theme) => theme.palette.primary.light + '80', // 50% opacity
-            backdropFilter: 'blur(5px)',
-            p: 3,
-            borderRadius: 4
-          }}>
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-                Your Plans
-              </Typography>
-              <Box sx={{ 
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 2,
-                justifyContent: 'center'
-              }}>
-                {userPlans.map((plan) => {
-                  const durations = getPlanDurations(plan);
-                  return (
+        <Paper sx={{ 
+          mb: 3,
+          borderRadius: 4,
+          bgcolor: (theme) => theme.palette.primary.light + '80',
+          backdropFilter: 'blur(5px)',
+          p: 2
+        }}>
+          <SectionHeader 
+            title="Your Plans" 
+            count={userPlans.length} 
+            color="primary"
+          />
+          {userPlans.length === 0 ? (
+            <Typography variant="body1" color="textSecondary" align="center">
+              You have no plans yet. Tap "Create New Plan" or copy a default plan below to get started.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+              {userPlans.map((plan) => {
+                const durations = getPlanDurations(plan);
+                return (
                   <Card
                     key={plan.id}
                     sx={{
@@ -175,7 +208,8 @@ const [deletePlanId, setDeletePlanId] = useState(null);
                         {plan.name}
                       </Typography>
                       <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccessTime /> Total: {durations.total} | Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
+                        <AccessTime />
+                        Total: {durations.total} | Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
                       </Typography>
                     </CardContent>
                     <CardActions sx={{ 
@@ -188,53 +222,64 @@ const [deletePlanId, setDeletePlanId] = useState(null);
                         fontSize: '0.8rem'
                       }
                     }}>
-                    <Button
-                      size="small"
-                      startIcon={<PlayArrow fontSize="small" />}
-                      onClick={() => navigate(`/play/${plan.id}`)}
-                    >
-                      Start
-                    </Button>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Start this plan" arrow>
                         <Button
-
-                        startIcon={<Edit fontSize="small" />}
-                          onClick={() => navigate(`/plan/${plan.id}`)}
-                          sx={{ color: 'text.secondary' }}
+                          size="small"
+                          startIcon={<PlayArrow fontSize="small" />}
+                          onClick={() => navigate(`/play/${plan.id}`)}
                         >
-                          Edit
+                          Start
                         </Button>
-                        <Button
-  startIcon={<Delete fontSize="small" />}
-  onClick={() => {
-    setDeletePlanId(plan.id);
-    setDeleteDialogOpen(true);
-  }}
-  sx={{ color: 'error.main' }}
->
-  Delete
-</Button>
+                      </Tooltip>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title="Edit this plan" arrow>
+                          <Button
+                            size="small"
+                            startIcon={<Edit fontSize="small" />}
+                            onClick={() => navigate(`/plan/${plan.id}`)}
+                            sx={{ color: 'text.secondary' }}
+                          >
+                            Edit
+                          </Button>
+                        </Tooltip>
+                        <Tooltip title="Delete this plan" arrow>
+                          <Button
+                            size="small"
+                            startIcon={<Delete fontSize="small" />}
+                            onClick={() => {
+                              setDeletePlanId(plan.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            sx={{ color: 'error.main' }}
+                          >
+                            Delete
+                          </Button>
+                        </Tooltip>
                       </Box>
                     </CardActions>
                   </Card>
-                  );
-                })}
-              </Box>
+                );
+              })}
             </Box>
-          </Paper>
-        )}
-  
+          )}
+        </Paper>
+
         {/* Default Plans Section */}
         {settings.showDefaultPlans && (
           <Paper sx={{ 
-            mt: 4,
-            backgroundColor: (theme) => theme.palette.secondary.light + '80', // 50% opacity
+            mb: 3,
+            borderRadius: 4,
+            backgroundColor: (theme) => theme.palette.secondary.light + '80',
             backdropFilter: 'blur(5px)',
-            p: 3,
-            borderRadius: 4
+            p: 2
           }}>
-            <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-              Default Plans
+            <SectionHeader 
+              title="Default Plans" 
+              count={defaultPlans.length} 
+              color="secondary"
+            />
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Tap "Copy & Customize" to quickly create your own plan based on this template.
             </Typography>
             <Box sx={{
               display: 'flex',
@@ -246,59 +291,77 @@ const [deletePlanId, setDeletePlanId] = useState(null);
                 const durations = getPlanDurations(plan);
                 return (
                   <Card
-                  key={plan.id}
-                  sx={{
-                    width: 260,
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    transform: touchedId === plan.id ? 'scale(0.98)' : 'none',
-                    boxShadow: touchedId === plan.id ? 1 : 3,
-                    '&:hover': {
-                      transform: 'scale(1.02)',
-                      boxShadow: 6
-                    }
-                  }}
-                  onTouchStart={() => setTouchedId(plan.id)}
-                  onTouchEnd={() => setTouchedId(null)}
-                >
-                  <CardContent sx={{ p: 1, pb: '0 !important' }}>
-                    <Typography variant="subtitle1" noWrap sx={{ fontSize: '0.9rem', mb: 0.5 }}>
-                      {plan.name}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccessTime />Total: {durations.total} | Lataif: {durations.lataif} | Muraqbat {durations.muraqbat}
-                    </Typography>
-                  </CardContent>
-                  <CardActions sx={{ 
-                    justifyContent: 'space-between', 
-                    p: 0.5,
-                    px: 1,
-                    '& button': { 
-                      minWidth: 40,
-                      padding: '4px 8px'
-                    }
-                  }}>
-                    <Button
-                      size="small"
-                      startIcon={<PlayArrow fontSize="small" />}
-                      onClick={() => navigate(`/play/${plan.id}`)}
-                    >
-                      Start
-                    </Button>
-                    <Button
-                      size="small"
-                      startIcon={<ContentCopy fontSize="small" />}
-                      onClick={() => onClonePlan(plan)}
-                    >
-                      Clone
-                    </Button>
-                  </CardActions>
-                </Card>
+                    key={plan.id}
+                    sx={{
+                      width: 260,
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      transform: touchedId === plan.id ? 'scale(0.98)' : 'none',
+                      boxShadow: touchedId === plan.id ? 1 : 3,
+                      '&:hover': {
+                        transform: 'scale(1.02)',
+                        boxShadow: 6
+                      }
+                    }}
+                    onTouchStart={() => setTouchedId(plan.id)}
+                    onTouchEnd={() => setTouchedId(null)}
+                  >
+                    <CardContent sx={{ p: 1, pb: '0 !important' }}>
+                      <Typography variant="subtitle1" noWrap sx={{ fontSize: '0.9rem', mb: 0.5 }}>
+                        {plan.name}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <AccessTime fontSize="small" />
+                        Total: {durations.total} | Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
+                      </Typography>
+                    </CardContent>
+                    <CardActions sx={{ 
+                      justifyContent: 'space-between', 
+                      p: 0.5,
+                      px: 1,
+                      '& button': { 
+                        minWidth: 40,
+                        padding: '4px 8px'
+                      }
+                    }}>
+                      <Tooltip title="Start this template" arrow>
+                        <Button
+                          size="small"
+                          startIcon={<PlayArrow fontSize="small" />}
+                          onClick={() => navigate(`/play/${plan.id}`)}
+                        >
+                          Start
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="Make your own version" arrow>
+                        <Button
+                          size="small"
+                          startIcon={<ContentCopy fontSize="small" />}
+                          onClick={() => handleClonePlan(plan)}
+                          sx={{ fontWeight: 600 }}
+                        >
+                          Copy & Customize
+                        </Button>
+                      </Tooltip>
+                    </CardActions>
+                  </Card>
                 );
               })}
             </Box>
           </Paper>
         )}
       </Box>
+
+      {/* Snackbar for Copy Confirmation */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+          Plan copied to Your Plans successfully!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
