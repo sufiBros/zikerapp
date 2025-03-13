@@ -33,7 +33,7 @@ export default function HomeScreen({
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Section header with count badge
+  // Section header component with count badge
   const SectionHeader = ({ title, count, color = 'primary' }) => (
     <Box sx={{ 
       display: 'flex',
@@ -50,7 +50,7 @@ export default function HomeScreen({
       <Badge
         badgeContent={count}
         color={color}
-        showZero={true} // This ensures 0 is displayed
+        showZero
         sx={{
           '& .MuiBadge-badge': {
             fontSize: '0.8rem',
@@ -65,11 +65,13 @@ export default function HomeScreen({
       />
     </Box>
   );
+
   const getPlanDurations = (plan) => {
     const lataifDuration = (
       (plan?.userLataif?.reduce((sum, l) => sum + (l.duration || 0), 0) || 0) +
       (plan?.raabta?.duration || 0) +
-      (plan?.intermediate?.duration || 0));
+      (plan?.intermediate?.duration || 0)
+    );
     
     const muraqbatDuration = plan?.muraqbat?.reduce((sum, m) => sum + (m.duration || 0), 0) || 0;
     const totalSeconds = lataifDuration + muraqbatDuration;
@@ -146,12 +148,26 @@ export default function HomeScreen({
           <Typography variant="h4" gutterBottom>
             Ziker Qalbi Plans
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+          <Box sx={{ 
+            display: 'flex',
+            gap: 2,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            '& > *': {
+              flexShrink: 1,
+              minWidth: 'fit-content'
+            }
+          }}>
             <Button
               variant="contained"
               onClick={() => navigate('/plan/new')}
               startIcon={<Add />}
-              sx={{ fontSize: '1.1rem', borderRadius: 2 }}
+              sx={{ 
+                fontSize: '1.1rem',
+                borderRadius: 2,
+                px: 3,
+                whiteSpace: 'nowrap'
+              }}
             >
               Create New Plan
             </Button>
@@ -159,7 +175,12 @@ export default function HomeScreen({
               variant="contained"
               startIcon={<Settings />}
               onClick={() => navigate('/settings')}
-              sx={{ fontSize: '1.1rem', borderRadius: 2 }}
+              sx={{ 
+                fontSize: '1.1rem',
+                borderRadius: 2,
+                px: 3,
+                whiteSpace: 'nowrap'
+              }}
             >
               Settings
             </Button>
@@ -179,6 +200,7 @@ export default function HomeScreen({
             count={userPlans.length} 
             color="primary"
           />
+          
           {userPlans.length === 0 ? (
             <Typography variant="body1" color="textSecondary" align="center">
               You have no plans yet. Tap "Create New Plan" or copy a default plan below to get started.
@@ -195,21 +217,43 @@ export default function HomeScreen({
                       transition: 'transform 0.2s, box-shadow 0.2s',
                       transform: touchedId === plan.id ? 'scale(0.98)' : 'none',
                       boxShadow: touchedId === plan.id ? 1 : 3,
-                      '&:hover': {
-                        transform: 'scale(1.02)',
-                        boxShadow: 6
-                      }
+                      '&:active': { transform: 'scale(0.98)' }
                     }}
                     onTouchStart={() => setTouchedId(plan.id)}
                     onTouchEnd={() => setTouchedId(null)}
                   >
-                    <CardContent sx={{ p: 1.5, pb: '0 !important' }}>
-                      <Typography variant="subtitle1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                    <CardContent sx={{ p: 1.5, pb: '0 !important', position: 'relative' }}>
+                      {/* Total Time Badge */}
+                      <Box sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        bgcolor: 'secondary.main',
+                        color: 'white',
+                        px: 1.2,
+                        borderRadius: 2,
+                        fontSize: '0.8rem'
+                      }}>
+                        <AccessTime fontSize="inherit" />
+                        <span>{durations.total}</span>
+                      </Box>
+                      
+                      <Typography variant="subtitle1" sx={{ 
+                        fontSize: '1rem',
+                        mb: 0.5,
+                        pr: 4
+                      }}>
                         {plan.name}
                       </Typography>
-                      <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AccessTime />
-                        Total: {durations.total} | Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
+                      <Typography variant="caption" color="textSecondary" sx={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}>
+                        Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
                       </Typography>
                     </CardContent>
                     <CardActions sx={{ 
@@ -297,21 +341,43 @@ export default function HomeScreen({
                       transition: 'transform 0.2s, box-shadow 0.2s',
                       transform: touchedId === plan.id ? 'scale(0.98)' : 'none',
                       boxShadow: touchedId === plan.id ? 1 : 3,
-                      '&:hover': {
-                        transform: 'scale(1.02)',
-                        boxShadow: 6
-                      }
+                      '&:active': { transform: 'scale(0.98)' }
                     }}
                     onTouchStart={() => setTouchedId(plan.id)}
                     onTouchEnd={() => setTouchedId(null)}
                   >
-                    <CardContent sx={{ p: 1, pb: '0 !important' }}>
-                      <Typography variant="subtitle1" noWrap sx={{ fontSize: '0.9rem', mb: 0.5 }}>
+                    <CardContent sx={{ p: 1, pb: '0 !important', position: 'relative' }}>
+                      {/* Total Time Badge */}
+                      <Box sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        px: 1.2,
+                        borderRadius: 2,
+                        fontSize: '0.8rem'
+                      }}>
+                        <AccessTime fontSize="inherit" />
+                        <span>{durations.total}</span>
+                      </Box>
+                      
+                      <Typography variant="subtitle1" noWrap sx={{ 
+                        fontSize: '0.9rem',
+                        mb: 0.5,
+                        pr: 4
+                      }}>
                         {plan.name}
                       </Typography>
-                      <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccessTime fontSize="small" />
-                        Total: {durations.total} | Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
+                      <Typography variant="caption" color="textSecondary" sx={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5
+                      }}>
+                        Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
                       </Typography>
                     </CardContent>
                     <CardActions sx={{ 
