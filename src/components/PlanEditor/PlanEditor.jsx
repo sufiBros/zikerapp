@@ -45,7 +45,6 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
   const navigate = useNavigate();
   const isNewPlan = id === 'new';
   
-  // Merge incoming settings with defaults
   const safeSettings = {
     ...defaultSettings,
     ...settings,
@@ -53,17 +52,12 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
     muraqbat: settings?.muraqbat || []
   };
 
-  // State initialization with required plan properties
   const [plan, setPlan] = useState(() => {
-    // New plan case
     if (isNewPlan) return createNewPlan();
-
-    // Existing plan case
     const existingPlan = userPlans.find(p => p.id === id) || {};
-    
     return {
-      ...createNewPlan(), // Start with defaults
-      ...existingPlan,    // Override with existing values
+      ...createNewPlan(),
+      ...existingPlan,
       userLataif: existingPlan.userLataif || [],
       muraqbat: existingPlan.muraqbat || [],
       intermediate: existingPlan.intermediate || { duration: 20, isAuto: true },
@@ -71,44 +65,64 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
     };
   });
 
-  // Navigation guard for invalid IDs
+  // Auto-calculate intermediate duration when L1 changes
   useEffect(() => {
-    if (!isNewPlan && !userPlans.some(p => p.id === id)) {
-      navigate('/');
+    if (plan.intermediate?.isAuto && plan.userLataif?.length > 0) {
+      const l1Duration = plan.userLataif[0].duration;
+      const calculatedDuration = Math.round(l1Duration / 3);
+      setPlan(prev => ({
+        ...prev,
+        intermediate: {
+          ...prev.intermediate,
+          duration: calculatedDuration > 0 ? calculatedDuration : 1
+        }
+      }));
     }
-  }, [userPlans, id, isNewPlan, navigate]);
+  }, [plan.userLataif, plan.intermediate?.isAuto]);
 
   const savePlan = () => {
     if (!plan.name?.trim()) {
       alert('Please enter a plan name');
       return;
     }
-
     onSavePlan?.(plan);
     navigate('/');
   };
 
-  // Check if all 7 lataif are selected
-  const hasAllLataif = new Set(plan.userLataif?.map(l => l.id)).size === 7;
+  // Add multiple lataif at once
+  const addLataif = (latifaIds) => {
+    const newLataif = latifaIds
+      .map(id => safeSettings.lataif.find(l => l.id === id))
+      .filter(l => l && !plan.userLataif.some(ul => ul.id === l.id))
+      .map(l => ({ ...l, duration: l.defaultDuration || 60 }));
 
-  // Add latifa to sequence
-  const addLatifa = (latifaId) => {
-    const selected = safeSettings.lataif.find(l => l.id === latifaId);
-    if (!selected) return;
-
-    setPlan(prev => ({
-      ...prev,
-      userLataif: [
-        ...(prev.userLataif || []),
-        {
-          ...selected,
-          duration: selected.defaultDuration || 60
-        }
-      ].sort((a, b) => a.id?.localeCompare(b.id))
-    }));
+    if (newLataif.length > 0) {
+      setPlan(prev => ({
+        ...prev,
+        userLataif: [
+          ...prev.userLataif,
+          ...newLataif
+        ].sort((a, b) => a.id?.localeCompare(b.id))
+      }));
+    }
   };
 
-  // Handle duration changes for any section
+  // Add multiple muraqbat at once
+  const addMuraqbat = (muraqbaIds) => {
+    const newMuraqbat = muraqbaIds
+      .map(id => safeSettings.muraqbat.find(m => m.id === id))
+      .filter(m => m && !plan.muraqbat.some(um => um.id === m.id))
+      .map(m => ({ ...m, duration: m.defaultDuration || 60 }));
+
+    if (newMuraqbat.length > 0) {
+      setPlan(prev => ({
+        ...prev,
+        muraqbat: [...prev.muraqbat, ...newMuraqbat]
+      }));
+    }
+  };
+
+  // Common handler for duration changes
   const handleDurationChange = (type, index, value) => {
     const parsed = parseInt(value);
     setPlan(prev => ({
@@ -119,14 +133,14 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
     }));
   };
 
-  // Remove item from any section
+  // Common handler for removing items
   const removeItem = (type, index) => {
     setPlan(prev => ({
       ...prev,
       [type]: (prev[type] || []).filter((_, i) => i !== index)
     }));
   };
-  
+
   return (
     <Box sx={{ p: 3, maxWidth: 800, margin: '0 auto' }}>
       <Card>
@@ -135,7 +149,6 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
             {isNewPlan ? 'Create New Plan' : `Editing: ${plan.name}`}
           </Typography>
 
-          {/* Plan Name Field */}
           <TextField
             fullWidth
             label="Plan Name"
@@ -144,18 +157,20 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
             sx={{ mb: 3 }}
           />
 
-          {/* Lataif Selection Section */}
+          {/* Lataif Section with Multi-Select */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Lataif Sequence (Select 1-7)
             </Typography>
             
             <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Add Latifa</InputLabel>
+              <InputLabel>Add Lataif</InputLabel>
               <Select
-                value=""
-                onChange={(e) => addLatifa(e.target.value)}
+                multiple
+                value={[]}
+                onChange={(e) => addLataif(e.target.value)}
                 disabled={(plan.userLataif?.length || 0) >= 7}
+                renderValue={() => "Select Lataif"}
               >
                 {safeSettings.lataif
                   .filter(l => !plan.userLataif?.some(ul => ul.id === l.id))
@@ -170,9 +185,7 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
             <List>
               {(plan.userLataif || []).map((latifa, idx) => (
                 <ListItem key={latifa.id || idx}>
-                  <ListItemText 
-                    primary={latifa.name || `Latifa ${latifa.id}`} 
-                  />
+                  <ListItemText primary={latifa.name || `Latifa ${latifa.id}`} />
                   <TextField
                     type="number"
                     label="Seconds"
@@ -181,10 +194,7 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
                     sx={{ width: 120, ml: 2 }}
                     inputProps={{ min: 1 }}
                   />
-                  <IconButton 
-                    edge="end" 
-                    onClick={() => removeItem('userLataif', idx)}
-                  >
+                  <IconButton onClick={() => removeItem('userLataif', idx)}>
                     <DeleteIcon />
                   </IconButton>
                 </ListItem>
@@ -192,120 +202,116 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
             </List>
           </Box>
 
-          {/* Intermediate Duration Section */}
+          {/* Intermediate Duration with Auto-Calculate */}
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Repeated Latifa 1
-            </Typography>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <TextField
-                type="number"
-                label="Duration (seconds)"
-                value={plan.intermediate?.duration}
-                onChange={e => setPlan(prev => ({
-                  ...prev,
-                  intermediate: {
-                    duration: Math.max(1, parseInt(e.target.value)),
-                    isAuto: false
-                  }
-                }))}
-                sx={{ width: 200 }}
-                inputProps={{ min: 1 }}
-              />
-              <Button
-                variant="outlined"
-                onClick={() => setPlan(prev => ({
-                  ...prev,
-                  intermediate: { 
-                    ...(prev.intermediate || {}), 
-                    isAuto: true 
-                  }
-                }))}
-                disabled={plan.intermediate?.isAuto}
-              >
-                Auto Calculate
-              </Button>
-            </Box>
-          </Box>
+  <Typography variant="h6" gutterBottom>
+    Repeated Latifa 1 Duration
+  </Typography>
+  
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+    <TextField
+      type="number"
+      label="Duration (seconds)"
+      value={plan.intermediate?.duration || 0}
+      onChange={e => setPlan(prev => ({
+        ...prev,
+        intermediate: {
+          duration: Math.max(1, parseInt(e.target.value)),
+          isAuto: false
+        }
+      }))}
+      sx={{ width: 200 }}
+      inputProps={{ min: 1 }}
+    />
+    
+    <Button
+        variant="outlined"
+        onClick={() => {
+          if (plan.userLataif[0]?.duration) {
+            setPlan(prev => ({
+              ...prev,
+              intermediate: {
+                duration: Math.round(plan.userLataif[0].duration / 3),
+                isAuto: true
+              }
+            }));
+          }
+        }}
+      >
+        Auto Calculate
+        {plan.intermediate?.isAuto && ' ✓'}
+      </Button>
+  </Box>
+  
+  <Typography variant="body2" color="textSecondary">
+    {plan.intermediate?.isAuto ? 
+      "Currently using 1/3 of First Latifa's duration" :
+      "Tip: Use 'Auto Calculate' to set based on first Latifa time"
+    }
+  </Typography>
+</Box>
 
           {/* Raabta Section */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Raabta Duration
-              </Typography>
-              
-              <TextField
-                fullWidth
-                type="number"
-                label="Duration in seconds (0 = no raabta)"
-                value={plan.raabta?.duration}
-                onChange={e => setPlan(prev => ({
-                  ...prev,
-                  raabta: { duration: Math.max(0, parseInt(e.target.value)) }
-                }))}
-                inputProps={{ min: 0 }}
-              />
-            </Box>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Raabta Duration
+            </Typography>
+            <TextField
+              fullWidth
+              type="number"
+              label="Duration in seconds (0 = no raabta)"
+              value={plan.raabta?.duration}
+              onChange={e => setPlan(prev => ({
+                ...prev,
+                raabta: { duration: Math.max(0, parseInt(e.target.value)) }
+              }))}
+              inputProps={{ min: 0 }}
+            />
+          </Box>
 
-          {/* Muraqbat Section */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Muraqbat Sequence
-              </Typography>
-              
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Add Muraqba</InputLabel>
-                <Select
-                  value=""
-                  onChange={e => {
-                    const selected = safeSettings.muraqbat.find(m => m.id === e.target.value);
-                    if (selected) {
-                      setPlan(prev => ({
-                        ...prev,
-                        muraqbat: [
-                          ...(prev.muraqbat || []),
-                          {
-                            ...selected,
-                            duration: selected.defaultDuration || 60
-                          }
-                        ]
-                      }));
-                    }
-                  }}
-                >
-                  {safeSettings.muraqbat
-                    .filter(m => !plan.muraqbat?.some(um => um.id === m.id))
-                    .map(m => (
-                      <MenuItem key={m.id} value={m.id}>
-                        {m.name || `Muraqba ${m.id}`}
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
+          {/* Muraqbat Section with Multi-Select */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Muraqbat Sequence
+            </Typography>
+            
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Add Muraqbat</InputLabel>
+              <Select
+                multiple
+                value={[]}
+                onChange={(e) => addMuraqbat(e.target.value)}
+                renderValue={() => "Select Muraqbat"}
+              >
+                {safeSettings.muraqbat
+                  .filter(m => !plan.muraqbat?.some(um => um.id === m.id))
+                  .map(m => (
+                    <MenuItem key={m.id} value={m.id}>
+                      {m.name || `Muraqba ${m.id}`}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
 
-              <List>
-                {(plan.muraqbat || []).map((muraqba, idx) => (
-                  <ListItem key={muraqba.id || idx}>
-                    <ListItemText primary={muraqba.name || `Muraqba ${muraqba.id}`} />
-                    <TextField
-                      type="number"
-                      label="Seconds"
-                      value={muraqba.duration}
-                      onChange={e => handleDurationChange('muraqbat', idx, e.target.value)}
-                      sx={{ width: 120, ml: 2 }}
-                      inputProps={{ min: 1 }}
-                    />
-                    <IconButton 
-                      edge="end" 
-                      onClick={() => removeItem('muraqbat', idx)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
+            <List>
+              {(plan.muraqbat || []).map((muraqba, idx) => (
+                <ListItem key={muraqba.id || idx}>
+                  <ListItemText primary={muraqba.name || `Muraqba ${muraqba.id}`} />
+                  <TextField
+                    type="number"
+                    label="Seconds"
+                    value={muraqba.duration}
+                    onChange={e => handleDurationChange('muraqbat', idx, e.target.value)}
+                    sx={{ width: 120, ml: 2 }}
+                    inputProps={{ min: 1 }}
+                  />
+                  <IconButton onClick={() => removeItem('muraqbat', idx)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
 
           {/* Control Buttons */}
           <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
