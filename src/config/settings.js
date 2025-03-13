@@ -61,7 +61,7 @@ export const DEFAULT_PLANS = [
     muraqbat: [],
     useStartAudio: true,
     useEndAudio: true
-  },*/
+  },
   {
     id: 'default-short',
     name: "Short Ziker",
@@ -105,7 +105,7 @@ export const DEFAULT_PLANS = [
     ],
     useStartAudio: true,
     useEndAudio: true
-  },
+  },*/
   {
     id: 'default-long',
     name: "Long Ziker",
