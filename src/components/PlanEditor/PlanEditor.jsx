@@ -16,9 +16,9 @@ import {
   ListItem,
   ListItemText
 } from '@mui/material';
-import { Delete as DeleteIcon, Save, Cancel } from '@mui/icons-material';
+import { Delete as DeleteIcon, Save, Cancel, DragHandle } from '@mui/icons-material';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
-// Default plan creation with required properties
 const createNewPlan = () => ({
   id: `plan-${Date.now()}`,
   name: 'New Plan',
@@ -30,7 +30,6 @@ const createNewPlan = () => ({
   useEndAudio: false
 });
 
-// Default settings fallback
 const defaultSettings = {
   lataif: [],
   muraqbat: [],
@@ -65,16 +64,20 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
     };
   });
 
-  // Auto-calculate intermediate duration when L1 changes
   useEffect(() => {
-    if (plan.intermediate?.isAuto && plan.userLataif?.length > 0) {
-      const l1Duration = plan.userLataif[0].duration;
-      const calculatedDuration = Math.round(l1Duration / 3);
+    if (!isNewPlan && !userPlans.some(p => p.id === id)) {
+      navigate('/');
+    }
+  }, [userPlans, id, isNewPlan, navigate]);
+
+  useEffect(() => {
+    if (plan.intermediate?.isAuto && plan.userLataif[0]?.duration) {
+      const newDuration = Math.round(plan.userLataif[0].duration / 3);
       setPlan(prev => ({
         ...prev,
         intermediate: {
           ...prev.intermediate,
-          duration: calculatedDuration > 0 ? calculatedDuration : 1
+          duration: newDuration > 0 ? newDuration : 1
         }
       }));
     }
@@ -89,40 +92,46 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
     navigate('/');
   };
 
-  // Add multiple lataif at once
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(plan.muraqbat);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setPlan(prev => ({
+      ...prev,
+      muraqbat: items
+    }));
+  };
+
   const addLataif = (latifaIds) => {
     const newLataif = latifaIds
       .map(id => safeSettings.lataif.find(l => l.id === id))
       .filter(l => l && !plan.userLataif.some(ul => ul.id === l.id))
       .map(l => ({ ...l, duration: l.defaultDuration || 60 }));
 
-    if (newLataif.length > 0) {
-      setPlan(prev => ({
-        ...prev,
-        userLataif: [
-          ...prev.userLataif,
-          ...newLataif
-        ].sort((a, b) => a.id?.localeCompare(b.id))
-      }));
-    }
+    setPlan(prev => ({
+      ...prev,
+      userLataif: [
+        ...prev.userLataif,
+        ...newLataif
+      ].sort((a, b) => a.id?.localeCompare(b.id)).slice(0, 7)
+    }));
   };
 
-  // Add multiple muraqbat at once
   const addMuraqbat = (muraqbaIds) => {
     const newMuraqbat = muraqbaIds
       .map(id => safeSettings.muraqbat.find(m => m.id === id))
       .filter(m => m && !plan.muraqbat.some(um => um.id === m.id))
       .map(m => ({ ...m, duration: m.defaultDuration || 60 }));
 
-    if (newMuraqbat.length > 0) {
-      setPlan(prev => ({
-        ...prev,
-        muraqbat: [...prev.muraqbat, ...newMuraqbat]
-      }));
-    }
+    setPlan(prev => ({
+      ...prev,
+      muraqbat: [...prev.muraqbat, ...newMuraqbat]
+    }));
   };
 
-  // Common handler for duration changes
   const handleDurationChange = (type, index, value) => {
     const parsed = parseInt(value);
     setPlan(prev => ({
@@ -133,7 +142,6 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
     }));
   };
 
-  // Common handler for removing items
   const removeItem = (type, index) => {
     setPlan(prev => ({
       ...prev,
@@ -157,7 +165,7 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
             sx={{ mb: 3 }}
           />
 
-          {/* Lataif Section with Multi-Select */}
+          {/* Lataif Section */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Lataif Sequence (Select 1-7)
@@ -169,7 +177,7 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
                 multiple
                 value={[]}
                 onChange={(e) => addLataif(e.target.value)}
-                disabled={(plan.userLataif?.length || 0) >= 7}
+                disabled={plan.userLataif?.length >= 7}
                 renderValue={() => "Select Lataif"}
               >
                 {safeSettings.lataif
@@ -202,54 +210,55 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
             </List>
           </Box>
 
-          {/* Intermediate Duration with Auto-Calculate */}
+          {/* Intermediate Duration */}
           <Box sx={{ mb: 3 }}>
-  <Typography variant="h6" gutterBottom>
-    Repeated Latifa 1 Duration
-  </Typography>
-  
-  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-    <TextField
-      type="number"
-      label="Duration (seconds)"
-      value={plan.intermediate?.duration || 0}
-      onChange={e => setPlan(prev => ({
-        ...prev,
-        intermediate: {
-          duration: Math.max(1, parseInt(e.target.value)),
-          isAuto: false
-        }
+            <Typography variant="h6" gutterBottom>
+              Repeated Latifa 1 Duration
+              <Typography component="span" variant="body2" color="textSecondary" sx={{ ml: 1 }}>
+                (Auto: 1/3 of first Latifa's time)
+              </Typography>
+            </Typography>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <TextField
+                type="number"
+                label="Seconds"
+                value={plan.intermediate?.duration || 0}
+                onChange={e => setPlan(prev => ({
+                  ...prev,
+                  intermediate: {
+                    duration: Math.max(1, parseInt(e.target.value)),
+                    isAuto: false
+                  }
       }))}
-      sx={{ width: 200 }}
-      inputProps={{ min: 1 }}
-    />
-    
-    <Button
-        variant="outlined"
-        onClick={() => {
-          if (plan.userLataif[0]?.duration) {
-            setPlan(prev => ({
-              ...prev,
-              intermediate: {
-                duration: Math.round(plan.userLataif[0].duration / 3),
-                isAuto: true
-              }
-            }));
-          }
-        }}
-      >
-        Auto Calculate
-        {plan.intermediate?.isAuto && ' ✓'}
-      </Button>
-  </Box>
-  
-  <Typography variant="body2" color="textSecondary">
-    {plan.intermediate?.isAuto ? 
-      "Currently using 1/3 of First Latifa's duration" :
-      "Tip: Use 'Auto Calculate' to set based on first Latifa time"
-    }
-  </Typography>
-</Box>
+                sx={{ width: 200 }}
+                inputProps={{ min: 1 }}
+              />
+              
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  if (plan.userLataif[0]?.duration) {
+                    setPlan(prev => ({
+                      ...prev,
+                      intermediate: {
+                        duration: Math.round(plan.userLataif[0].duration / 3),
+                        isAuto: true
+                      }
+                    }));
+                  }
+                }}
+              >
+                {plan.intermediate?.isAuto ? 'Auto ✓' : 'Use Auto'}
+              </Button>
+            </Box>
+            
+            {plan.intermediate?.isAuto && plan.userLataif[0]?.duration && (
+              <Typography variant="body2" color="textSecondary">
+                Currently using {plan.intermediate.duration}s (1/3 of {plan.userLataif[0].duration}s)
+              </Typography>
+            )}
+          </Box>
 
           {/* Raabta Section */}
           <Box sx={{ mb: 3 }}>
@@ -269,12 +278,15 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
             />
           </Box>
 
-          {/* Muraqbat Section with Multi-Select */}
+          {/* Muraqbat Section with Drag & Drop */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Muraqbat Sequence
+              <Typography variant="body2" color="textSecondary">
+                Drag to arrange order
+              </Typography>
             </Typography>
-            
+
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Add Muraqbat</InputLabel>
               <Select
@@ -284,7 +296,7 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
                 renderValue={() => "Select Muraqbat"}
               >
                 {safeSettings.muraqbat
-                  .filter(m => !plan.muraqbat?.some(um => um.id === m.id))
+                  .filter(m => !plan.muraqbat?.some(um => m.id === um.id))
                   .map(m => (
                     <MenuItem key={m.id} value={m.id}>
                       {m.name || `Muraqba ${m.id}`}
@@ -293,24 +305,60 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
               </Select>
             </FormControl>
 
-            <List>
-              {(plan.muraqbat || []).map((muraqba, idx) => (
-                <ListItem key={muraqba.id || idx}>
-                  <ListItemText primary={muraqba.name || `Muraqba ${muraqba.id}`} />
-                  <TextField
-                    type="number"
-                    label="Seconds"
-                    value={muraqba.duration}
-                    onChange={e => handleDurationChange('muraqbat', idx, e.target.value)}
-                    sx={{ width: 120, ml: 2 }}
-                    inputProps={{ min: 1 }}
-                  />
-                  <IconButton onClick={() => removeItem('muraqbat', idx)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </ListItem>
-              ))}
-            </List>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="muraqbat">
+                {(provided) => (
+                  <List 
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    sx={{ userSelect: 'none' }}
+                  >
+                    {(plan.muraqbat || []).map((muraqba, index) => (
+                      <Draggable 
+                        key={muraqba.id} 
+                        draggableId={muraqba.id} 
+                        index={index}
+                      >
+                        {(provided, snapshot) => (
+                          <ListItem
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            sx={{
+                              transition: 'all 0.2s ease',
+                              bgcolor: snapshot.isDragging ? 'rgba(0, 0, 0, 0.05)' : 'inherit',
+                              boxShadow: snapshot.isDragging ? 1 : 'none',
+                              borderRadius: 1,
+                              border: snapshot.isDragging ? '1px solid divider' : 'none'
+                            }}
+                          >
+                            <DragHandle sx={{ mr: 1, color: 'action.active' }} />
+                            <ListItemText 
+                              primary={muraqba.name || `Muraqba ${muraqba.id}`} 
+                            />
+                            <TextField
+                              type="number"
+                              label="Seconds"
+                              value={muraqba.duration}
+                              onChange={e => handleDurationChange('muraqbat', index, e.target.value)}
+                              sx={{ width: 120, ml: 2 }}
+                              inputProps={{ min: 1 }}
+                            />
+                            <IconButton 
+                              edge="end" 
+                              onClick={() => removeItem('muraqbat', index)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </ListItem>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </List>
+                )}
+              </Droppable>
+            </DragDropContext>
           </Box>
 
           {/* Control Buttons */}
@@ -320,6 +368,7 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
               startIcon={<Save />}
               onClick={savePlan}
               size="large"
+              sx={{ flex: 1 }}
             >
               {isNewPlan ? 'Create Plan' : 'Save Changes'}
             </Button>
@@ -328,6 +377,7 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
               startIcon={<Cancel />}
               onClick={() => navigate('/')}
               size="large"
+              sx={{ flex: 1 }}
             >
               Cancel
             </Button>
