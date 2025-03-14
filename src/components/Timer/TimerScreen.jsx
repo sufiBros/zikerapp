@@ -29,6 +29,7 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const audioRef = useRef(null);
   const wakeLockRef = useRef(null);
+  const [hasStarted, setHasStarted] = useState(false);
 
   // Wake Lock handling
   const requestWakeLock = async () => {
@@ -138,14 +139,16 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
 
 const totalRemainingTime = useMemo(() => {
   if (currentInterval >= sequence.length) return 0;
+  if (!isRunning) return totalDuration;
   
-  const validFutureSteps = sequence
-    .slice(currentInterval + 1)
+  const remainingSteps = sequence
+    .slice(currentInterval)
     .filter(step => step.duration > 0);
   
-  return timeLeft + 
-    validFutureSteps.reduce((sum, step) => sum + step.duration, 0);
-}, [currentInterval, sequence, timeLeft]);
+  return timeLeft + remainingSteps
+    .slice(1)
+    .reduce((sum, step) => sum + step.duration, 0);
+}, [currentInterval, sequence, timeLeft, isRunning, totalDuration]);
 
   const progress = useMemo(() => {
     const currentStep = sequence[currentInterval];
@@ -193,6 +196,10 @@ const totalRemainingTime = useMemo(() => {
   }, []);
 
   const handlePlayPause = async () => {
+    if (!hasStarted) {
+      setHasStarted(true);
+    }
+
     if (!isRunning && !isStarting) {
       setIsStarting(true);
       
@@ -294,6 +301,17 @@ useEffect(() => {
   };
 
   const handleSkip = () => {
+    if (isStarting) {
+      // Skip start audio and go directly to first interval
+      Howler.stop();
+      setIsStarting(false);
+      setCurrentInterval(0);
+      setTimeLeft(sequence[0].duration);
+      setIsRunning(true);
+      playAudio(sequence[0].audioId);
+      return;
+    }
+
     if (currentInterval < sequence.length) {
       const nextInterval = currentInterval + 1;
 
@@ -313,7 +331,8 @@ useEffect(() => {
     }
   };
 
-  const handleSkipBack = () => {
+const handleSkipBack = () => {
+  if (currentInterval > 0 && !isStarting) {
     if (currentInterval > 0) {
       const prevInterval = currentInterval - 1;
       setCurrentInterval(prevInterval);
@@ -321,7 +340,17 @@ useEffect(() => {
       playAudio(sequence[prevInterval].audioId);
       if (!isRunning) setIsRunning(true);
     }
-  };
+  }
+};
+
+  const startReminderText = `
+سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلٰهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ الْعَلِيِّ الْعَظِيمِ
+أَسْتَغْفِرُ اللَّهَ رَبِّي مِنْ كُلِّ ذَنْبٍ وَأَتُوبُ إِلَيْهِ
+أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ
+أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ
+بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+اللَّهُ اللَّهُ اللَّهُ
+`;
 
   const completionText = `
 آمین
@@ -354,173 +383,241 @@ useEffect(() => {
     );
   }
 
-  return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-        {/* Back Button Header */}
-        <Box sx={{ 
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 4,
-          position: 'relative'
-        }}>
-          <IconButton onClick={handleBack}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-            {plan.name} Session
-          </Typography>
-           {/* Total Remaining Badge */}
-    <Paper 
-      elevation={1} 
-      sx={{ 
-        bgcolor: 'primary.light', 
-        px: 1.5, 
-        py: 0.5, 
-        borderRadius: 4,
+return (
+  <Container maxWidth="md" sx={{ py: 4 }}>
+    <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
+      {/* Back Button Header */}
+      <Box sx={{ 
         display: 'flex',
-        alignItems: 'center'
-      }}
-    >
-      <Typography 
-        variant="caption" 
-        sx={{ 
-          fontWeight: 'large', 
-          color: 'common.white',
-          lineHeight: 1 
-        }}
-      >
-        Est: {formatTime(totalRemainingTime)}
-      </Typography>
-    </Paper>
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 4,
+        position: 'relative'
+      }}>
+        <IconButton onClick={handleBack}>
+          <ArrowBack />
+        </IconButton>
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          {plan.name} Session
+        </Typography>
+        <Paper 
+          elevation={1} 
+          sx={{ 
+            bgcolor: 'primary.light', 
+            px: 1.5, 
+            py: 0.5, 
+            borderRadius: 4,
+            display: 'flex',
+            alignItems: 'center',
+            visibility: hasStarted ? 'visible' : 'hidden'
+          }}
+        >
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              fontWeight: 'medium', 
+              color: 'common.white',
+              lineHeight: 1 
+            }}
+          >
+            Est: {formatTime(totalRemainingTime)}
+          </Typography>
+        </Paper>
+      </Box>
+
+      {/* Initial Play Button */}
+      {!hasStarted && (
+        <Box sx={{ 
+          height: 300,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 3
+        }}>
+          <IconButton 
+            color="primary" 
+            size="large"
+            sx={{ 
+              fontSize: '6rem',
+              width: 120,
+              height: 120,
+              backgroundColor: 'primary.light',
+              '&:hover': {
+                backgroundColor: 'primary.main'
+              }
+            }}
+            onClick={handlePlayPause}
+          >
+            <PlayArrow fontSize="inherit" />
+          </IconButton>
+          <Typography variant="h6" color="textSecondary">
+            Tap to start session
+          </Typography>
         </Box>
+      )}
 
-        {/* Confirmation Dialog */}
-        <Dialog open={showConfirmDialog} onClose={handleCancelNavigation}>
-          <DialogTitle>Confirm Navigation</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Are you sure you want to leave? The current session will be aborted.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCancelNavigation}>Cancel</Button>
-            <Button onClick={handleConfirmNavigation} color="primary">
-              Confirm
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {currentInterval < sequence.length ? (
-          <>
-            <Typography variant="h5" color="primary" sx={{ mb: 2 }}>
-              {sequence[currentInterval]?.name || 'Session Complete'}
-              {sequence[currentInterval]?.duration === 0 && ' (Skipped)'}
-            </Typography>
-
+      {/* Session Content */}
+      {hasStarted && (
+        <>
+          {currentInterval < sequence.length ? (
+            <>
+              {isStarting ? (
+                <Box sx={{ 
+                  minHeight: 200,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 2
+                }}>
+                  <Typography 
+                    variant="h5" 
+                    component="div"
+                    sx={{ 
+                      whiteSpace: 'pre-line',
+                      textAlign: 'center',
+                      fontFamily: "'Noto Naskh Arabic', serif",
+                      lineHeight: 2,
+                      fontSize: '1.4rem',
+                      direction: 'rtl'
+                    }}
+                  >
+                    {startReminderText}
+                  </Typography>
+                </Box>
+              ) : (
+                <>
+                  <Typography variant="h5" color="primary" sx={{ mb: 2 }}>
+                    {sequence[currentInterval]?.name || 'Session Complete'}
+                  </Typography>
+                  <Box sx={{ 
+                    height: 200,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 3,
+                    mb: 4
+                  }}>
+                    <Typography variant="h1" component="div" sx={{ fontFamily: 'monospace' }}>
+                      {formatMinutes(timeLeft)}
+                    </Typography>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={progress}
+                      sx={{ height: 10, width: '80%', borderRadius: 5 }}
+                    />
+                  </Box>
+                  <Typography variant="h6" color="textSecondary">
+                    Next: {sequence[currentInterval + 1]?.name || 'Session Complete'}
+                  </Typography>
+                </>
+              )}
+            </>
+          ) : (
             <Box sx={{ 
-              height: 200,
+              minHeight: 300,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
-              gap: 3,
-              mb: 4
+              gap: 2
             }}>
-              <Typography variant="h1" component="div" sx={{ fontFamily: 'monospace' }}>
-                {formatMinutes(timeLeft)}
+              <Typography 
+                variant="h5" 
+                component="div"
+                sx={{ 
+                  whiteSpace: 'pre-line',
+                  textAlign: 'center',
+                  fontFamily: "'Noto Naskh Arabic', serif",
+                  lineHeight: 2,
+                  fontSize: '1.4rem',
+                  direction: 'rtl'
+                }}
+              >
+                {completionText}
               </Typography>
-
-              <LinearProgress 
-                variant="determinate" 
-                value={progress}
-                sx={{ height: 10, width: '80%', borderRadius: 5 }}
-              />
             </Box>
-            <Typography variant="h6" color="textSecondary">
-              Next: {sequence[currentInterval + 1]?.name || 'Session Complete'}
-            </Typography>
-          </>
-        ) : (
-          <Box sx={{ 
-            minHeight: 300,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 2
-          }}>
-            <Typography 
-              variant="h5" 
-              component="div"
-              sx={{ 
-                whiteSpace: 'pre-line',
-                textAlign: 'center',
-                fontFamily: "'Noto Naskh Arabic', serif",
-                lineHeight: 2,
-                fontSize: '1.4rem',
-                direction: 'rtl'
-              }}
-            >
-              {completionText}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4 }}>
-          {currentInterval < sequence.length ? (
-            <>
-              <IconButton 
-                color="secondary" 
-                size="large"
-                sx={{ fontSize: '3rem' }}
-                onClick={handleSkipBack}
-                disabled={currentInterval <= 0}
-              >
-                <SkipPrevious fontSize="inherit" />
-              </IconButton>
-
-              <IconButton 
-                color="primary" 
-                size="large"
-                sx={{ fontSize: '3rem' }}
-                onClick={handlePlayPause}
-                disabled={isStarting}
-              >
-                {isStarting ? (
-                  <Pause fontSize="inherit" />
-                ) : isRunning ? (
-                  <Pause fontSize="inherit" />
-                ) : (
-                  <PlayArrow fontSize="inherit" />
-                )}
-              </IconButton>
-
-              <IconButton 
-                color="secondary" 
-                size="large"
-                sx={{ fontSize: '3rem' }}
-                onClick={handleSkip}
-                disabled={currentInterval >= sequence.length}
-              >
-                <SkipNext fontSize="inherit" />
-              </IconButton>
-            </>
-          ) : (
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              onClick={handleBack}
-              sx={{ fontSize: '1.5rem', mt: 3 }}
-            >
-              End Session
-            </Button>
           )}
-        </Box>
-      </Paper>
-    </Container>
-  );
+
+          {/* Controls */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: 2, 
+            mt: 4,
+            visibility: hasStarted ? 'visible' : 'hidden'
+          }}>
+            {currentInterval < sequence.length ? (
+              <>
+                <IconButton 
+                  color="secondary" 
+                  size="large"
+                  sx={{ fontSize: '3rem' }}
+                  onClick={handleSkipBack}
+                  disabled={currentInterval <= 0 || isStarting}
+                >
+                  <SkipPrevious fontSize="inherit" />
+                </IconButton>
+
+                <IconButton 
+                  color="primary" 
+                  size="large"
+                  sx={{ fontSize: '3rem' }}
+                  onClick={handlePlayPause}
+                  disabled={isStarting}
+                >
+                  {isStarting ? (
+                    <Pause fontSize="inherit" />
+                  ) : isRunning ? (
+                    <Pause fontSize="inherit" />
+                  ) : (
+                    <PlayArrow fontSize="inherit" />
+                  )}
+                </IconButton>
+
+                <IconButton 
+                  color="secondary" 
+                  size="large"
+                  sx={{ fontSize: '3rem' }}
+                  onClick={handleSkip}
+                  disabled={currentInterval >= sequence.length}
+                >
+                  <SkipNext fontSize="inherit" />
+                </IconButton>
+              </>
+            ) : (
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                onClick={handleBack}
+                sx={{ fontSize: '1.5rem', mt: 3 }}
+              >
+                End Session
+              </Button>
+            )}
+          </Box>
+        </>
+      )}
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onClose={handleCancelNavigation}>
+        <DialogTitle>Confirm Navigation</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to leave? The current session will be aborted.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelNavigation}>Cancel</Button>
+          <Button onClick={handleConfirmNavigation} color="primary">
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Paper>
+  </Container>
+);
 }
