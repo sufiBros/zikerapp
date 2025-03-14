@@ -14,7 +14,7 @@ import {
   DialogActions,
   Button
 } from '@mui/material';
-import { PlayArrow, Pause, SkipNext, SkipPrevious, ArrowBack } from '@mui/icons-material';
+import { PlayArrow, Pause, SkipNext, SkipPrevious, ArrowBack,AccessTime } from '@mui/icons-material';
 import defaultBeep from '../../audio/default_beep.mp3';
 import { Howl, Howler } from 'howler';
 
@@ -54,7 +54,6 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
   // Back button handling
   const handleBack = () => {
     if (isRunning || isStarting) {
-      alert(isStarting);
       setShowConfirmDialog(true);
     } else {
       Howler.stop();
@@ -133,14 +132,26 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
 
   // Progress calculations
   const totalDuration = useMemo(() => 
-    sequence.reduce((sum, item) => sum + item.duration, 0), 
-    [sequence]
-  );
+  sequence.reduce((sum, item) => sum + item.duration, 0), 
+  [sequence]
+);
 
-  const progress = useMemo(() => 
-    totalDuration > 0 ? ((totalDuration - timeLeft) / totalDuration) * 100 : 0, 
-    [totalDuration, timeLeft]
-  );
+const totalRemainingTime = useMemo(() => {
+  if (currentInterval >= sequence.length) return 0;
+  
+  const validFutureSteps = sequence
+    .slice(currentInterval + 1)
+    .filter(step => step.duration > 0);
+  
+  return timeLeft + 
+    validFutureSteps.reduce((sum, step) => sum + step.duration, 0);
+}, [currentInterval, sequence, timeLeft]);
+
+  const progress = useMemo(() => {
+    const currentStep = sequence[currentInterval];
+    if (!currentStep || currentStep.duration <= 0) return 0;
+    return ((currentStep.duration - timeLeft) / currentStep.duration) * 100;
+  }, [currentInterval, sequence, timeLeft]);
 
   const getAudioSource = (audioId) => {
     try {
@@ -239,9 +250,9 @@ useEffect(() => {
             // This is the crucial change - update currentInterval even when ending naturally
             setCurrentInterval(nextInterval);
             if(settings.play_end) {
+              setIsStarting(false);
+              setIsRunning(false);
               playAudio(settings.audio.end || 'end', () => {
-                setIsRunning(false);
-                setIsStarting(false);
               });
             } else {
               setIsRunning(false);
@@ -264,10 +275,22 @@ useEffect(() => {
     };
   }, []);
 
-  const formatTime = (seconds) => {
+  const formatMinutes = (seconds) => {
     const mins = Math.floor(Math.max(0, seconds) / 60);
     const secs = Math.max(0, seconds) % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    
+    return [
+      hours.toString().padStart(2, '0'),
+      minutes.toString().padStart(2, '0'),
+      remainingSeconds.toString().padStart(2, '0')
+    ].join(':');
   };
 
   const handleSkip = () => {
@@ -339,15 +362,38 @@ useEffect(() => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          mb: 4
+          mb: 4,
+          position: 'relative'
         }}>
           <IconButton onClick={handleBack}>
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
             {plan.name} Session
           </Typography>
-          <div style={{ width: 48 }} />
+           {/* Total Remaining Badge */}
+    <Paper 
+      elevation={1} 
+      sx={{ 
+        bgcolor: 'primary.light', 
+        px: 1.5, 
+        py: 0.5, 
+        borderRadius: 4,
+        display: 'flex',
+        alignItems: 'center'
+      }}
+    >
+      <Typography 
+        variant="caption" 
+        sx={{ 
+          fontWeight: 'large', 
+          color: 'common.white',
+          lineHeight: 1 
+        }}
+      >
+        Est: {formatTime(totalRemainingTime)}
+      </Typography>
+    </Paper>
         </Box>
 
         {/* Confirmation Dialog */}
@@ -368,7 +414,7 @@ useEffect(() => {
 
         {currentInterval < sequence.length ? (
           <>
-            <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
+            <Typography variant="h5" color="primary" sx={{ mb: 2 }}>
               {sequence[currentInterval]?.name || 'Session Complete'}
               {sequence[currentInterval]?.duration === 0 && ' (Skipped)'}
             </Typography>
@@ -383,16 +429,15 @@ useEffect(() => {
               mb: 4
             }}>
               <Typography variant="h1" component="div" sx={{ fontFamily: 'monospace' }}>
-                {formatTime(timeLeft)}
+                {formatMinutes(timeLeft)}
               </Typography>
-              
+
               <LinearProgress 
                 variant="determinate" 
                 value={progress}
                 sx={{ height: 10, width: '80%', borderRadius: 5 }}
               />
             </Box>
-
             <Typography variant="h6" color="textSecondary">
               Next: {sequence[currentInterval + 1]?.name || 'Session Complete'}
             </Typography>

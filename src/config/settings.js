@@ -32,17 +32,17 @@ export const DEFAULT_PLANS = [
     userLataif: Array.from({ length: 7 }, (_, i) => ({
       id: `L${i + 1}`,
       name: `Latifa ${i + 1}`,
-      duration: 2
+      duration: 3
     })),
     intermediate: { duration: 2, isAuto: false },
     raabta: { duration: 0 },
     muraqbat: [
-      { id: 'M1', name: 'Ahdiyat', duration: 4 },
-      { id: 'M2', name: 'Maiyyat', duration: 2 },
-      { id: 'M3', name: 'Aqrabiyat', duration: 2 },
-      { id: 'M4', name: 'Saer-e-Qaba', duration: 2 },
-      { id: 'M5', name: 'Roza-e-Athar', duration: 2 },
-      { id: 'M6', name: 'Masjid-e-Nabawi', duration: 2 },
+      { id: 'M1', name: 'Ahdiyat', duration: 3 },
+      { id: 'M2', name: 'Maiyyat', duration: 3 },
+      { id: 'M3', name: 'Aqrabiyat', duration: 3 },
+      { id: 'M4', name: 'Saer-e-Qaba', duration: 3 },
+      { id: 'M5', name: 'Roza-e-Athar', duration: 3 },
+      { id: 'M6', name: 'Masjid-e-Nabawi', duration: 3 },
     ],
     useStartAudio: true,
     useEndAudio: true

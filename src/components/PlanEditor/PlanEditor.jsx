@@ -64,6 +64,14 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
     };
   });
 
+  const [errors, setErrors] = useState({
+    name: '',
+    userLataif: [],
+    intermediate: '',
+    raabta: '',
+    muraqbat: []
+  });
+
   useEffect(() => {
     if (!isNewPlan && !userPlans.some(p => p.id === id)) {
       navigate('/');
@@ -84,10 +92,53 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
   }, [plan.userLataif, plan.intermediate?.isAuto]);
 
   const savePlan = () => {
+    let hasErrors = false;
+    const newErrors = {
+      name: '',
+      userLataif: [],
+      intermediate: '',
+      raabta: '',
+      muraqbat: []
+    };
+  
+    // Validate plan name
     if (!plan.name?.trim()) {
-      alert('Please enter a plan name');
-      return;
+      newErrors.name = 'Plan name is required';
+      hasErrors = true;
     }
+  
+    // Validate Lataif durations
+    plan.userLataif?.forEach((latifa, index) => {
+      if (latifa.duration > 3599) {
+        newErrors.userLataif[index] = 'Maximum 59m 59s (3599 seconds)';
+        hasErrors = true;
+      }
+    });
+  
+    // Validate Intermediate duration
+    if (plan.intermediate?.duration > 3599) {
+      newErrors.intermediate = 'Maximum 59m 59s (3599 seconds)';
+      hasErrors = true;
+    }
+  
+    // Validate Raabta duration
+    if (plan.raabta?.duration > 3599) {
+      newErrors.raabta = 'Maximum 59m 59s (3599 seconds)';
+      hasErrors = true;
+    }
+  
+    // Validate Muraqbat durations
+    plan.muraqbat?.forEach((muraqba, index) => {
+      if (muraqba.duration > 3599) {
+        newErrors.muraqbat[index] = 'Maximum 59m 59s (3599 seconds)';
+        hasErrors = true;
+      }
+    });
+  
+    setErrors(newErrors);
+  
+    if (hasErrors) return;
+  
     onSavePlan?.(plan);
     navigate('/');
   };
@@ -161,7 +212,12 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
             fullWidth
             label="Plan Name"
             value={plan.name || ''}
-            onChange={e => setPlan(prev => ({ ...prev, name: e.target.value }))}
+            onChange={e => {
+              setPlan(prev => ({ ...prev, name: e.target.value }));
+              setErrors(prev => ({ ...prev, name: '' }));
+            }}
+            error={!!errors.name}
+            helperText={errors.name}
             sx={{ mb: 3 }}
           />
 
@@ -198,9 +254,17 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
                     type="number"
                     label="Seconds"
                     value={latifa.duration}
-                    onChange={e => handleDurationChange('userLataif', idx, e.target.value)}
+                    onChange={e => {
+                      handleDurationChange('userLataif', idx, e.target.value);
+                      setErrors(prev => ({
+                        ...prev,
+                        userLataif: prev.userLataif.map((err, i) => i === idx ? '' : err)
+                      }));
+                    }}
+                    error={!!errors.userLataif[idx]}
+                    helperText={errors.userLataif[idx]}
                     sx={{ width: 120, ml: 2 }}
-                    inputProps={{ min: 1 }}
+                    inputProps={{ min: 1, max: 3599 }}
                   />
                   <IconButton onClick={() => removeItem('userLataif', idx)}>
                     <DeleteIcon />
@@ -224,15 +288,20 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
                 type="number"
                 label="Seconds"
                 value={plan.intermediate?.duration || 0}
-                onChange={e => setPlan(prev => ({
-                  ...prev,
-                  intermediate: {
-                    duration: Math.max(1, parseInt(e.target.value)),
-                    isAuto: false
-                  }
-      }))}
+                onChange={e => {
+                  setPlan(prev => ({
+                    ...prev,
+                    intermediate: {
+                      duration: parseInt(e.target.value),
+                      isAuto: false
+                    }
+                  }));
+                  setErrors(prev => ({ ...prev, intermediate: '' }));
+                }}
+                error={!!errors.intermediate}
+                helperText={errors.intermediate}
                 sx={{ width: 200 }}
-                inputProps={{ min: 1 }}
+                inputProps={{ min: 1, max: 3599 }}
               />
               
               <Button
@@ -270,11 +339,16 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
               type="number"
               label="Duration in seconds (0 = no raabta)"
               value={plan.raabta?.duration}
-              onChange={e => setPlan(prev => ({
-                ...prev,
-                raabta: { duration: Math.max(0, parseInt(e.target.value)) }
-              }))}
-              inputProps={{ min: 0 }}
+              onChange={e => {
+                setPlan(prev => ({
+                  ...prev,
+                  raabta: { duration: parseInt(e.target.value) }
+                }));
+                setErrors(prev => ({ ...prev, raabta: '' }));
+              }}
+              error={!!errors.raabta}
+              helperText={errors.raabta}
+              inputProps={{ min: 0, max: 3599 }}
             />
           </Box>
 
@@ -340,9 +414,17 @@ export default function PlanEditor({ userPlans = [], onSavePlan, settings = defa
                               type="number"
                               label="Seconds"
                               value={muraqba.duration}
-                              onChange={e => handleDurationChange('muraqbat', index, e.target.value)}
+                              onChange={e => {
+                                handleDurationChange('muraqbat', index, e.target.value);
+                                setErrors(prev => ({
+                                  ...prev,
+                                  muraqbat: prev.muraqbat.map((err, i) => i === index ? '' : err)
+                                }));
+                              }}
+                              error={!!errors.muraqbat[index]}
+                              helperText={errors.muraqbat[index]}
                               sx={{ width: 120, ml: 2 }}
-                              inputProps={{ min: 1 }}
+                              inputProps={{ min: 1, max: 3599 }}
                             />
                             <IconButton 
                               edge="end" 

@@ -150,7 +150,7 @@ export default function HomeScreen({
           </Typography>
           <Box sx={{ 
             display: 'flex',
-            gap: 2,
+            gap: 1,
             flexDirection: 'row',
             justifyContent: 'center',
             '& > *': {
@@ -193,119 +193,120 @@ export default function HomeScreen({
           borderRadius: 4,
           bgcolor: (theme) => theme.palette.primary.light + '80',
           backdropFilter: 'blur(5px)',
-          p: 2
+          p:0
         }}>
           <SectionHeader 
             title="Your Plans" 
             count={userPlans.length} 
             color="primary"
           />
-          
-          {userPlans.length === 0 ? (
-            <Typography variant="body1" color="textSecondary" align="center">
-              You have no plans yet. Tap "Create New Plan" or copy a default plan below to get started.
-            </Typography>
-          ) : (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
-              {userPlans.map((plan) => {
-                const durations = getPlanDurations(plan);
-                return (
-                  <Card
-                    key={plan.id}
-                    sx={{
-                      width: 260,
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                      transform: touchedId === plan.id ? 'scale(0.98)' : 'none',
-                      boxShadow: touchedId === plan.id ? 1 : 3,
-                      '&:active': { transform: 'scale(0.98)' }
-                    }}
-                    onTouchStart={() => setTouchedId(plan.id)}
-                    onTouchEnd={() => setTouchedId(null)}
-                  >
-                    <CardContent sx={{ p: 1.5, pb: '0 !important', position: 'relative' }}>
-                      {/* Total Time Badge */}
-                      <Box sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'secondary.main',
-                        color: 'white',
-                        px: 1.2,
-                        borderRadius: 2,
-                        fontSize: '0.8rem'
+          <Box sx={{p:2}}>
+            {userPlans.length === 0 ? (
+              <Typography variant="body1" color="textSecondary" align="center">
+                You have no plans yet. Tap "Create New Plan" or copy a default plan below to get started.
+              </Typography>
+            ) : (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+                {userPlans.map((plan) => {
+                  const durations = getPlanDurations(plan);
+                  return (
+                    <Card
+                      key={plan.id}
+                      sx={{
+                        width: 260,
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        transform: touchedId === plan.id ? 'scale(0.98)' : 'none',
+                        boxShadow: touchedId === plan.id ? 1 : 3,
+                        '&:active': { transform: 'scale(0.98)' }
+                      }}
+                      onTouchStart={() => setTouchedId(plan.id)}
+                      onTouchEnd={() => setTouchedId(null)}
+                    >
+                      <CardContent sx={{ p: 1.5, pb: '0 !important', position: 'relative' }}>
+                        {/* Total Time Badge */}
+                        <Box sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          bgcolor: 'secondary.main',
+                          color: 'white',
+                          px: 1.2,
+                          borderRadius: 2,
+                          fontSize: '0.8rem'
+                        }}>
+                          <AccessTime fontSize="inherit" />
+                          <span>{durations.total}</span>
+                        </Box>
+                        
+                        <Typography variant="subtitle1" sx={{ 
+                          fontSize: '1rem',
+                          mb: 0.5,
+                          pr: 4
+                        }}>
+                          {plan.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary" sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1
+                        }}>
+                          Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
+                        </Typography>
+                      </CardContent>
+                      <CardActions sx={{ 
+                        justifyContent: 'space-between', 
+                        p: 1,
+                        pt: 0,
+                        '& button': { 
+                          minWidth: 'auto',
+                          padding: '4px 8px',
+                          fontSize: '0.8rem'
+                        }
                       }}>
-                        <AccessTime fontSize="inherit" />
-                        <span>{durations.total}</span>
-                      </Box>
-                      
-                      <Typography variant="subtitle1" sx={{ 
-                        fontSize: '1rem',
-                        mb: 0.5,
-                        pr: 4
-                      }}>
-                        {plan.name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary" sx={{ 
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1
-                      }}>
-                        Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
-                      </Typography>
-                    </CardContent>
-                    <CardActions sx={{ 
-                      justifyContent: 'space-between', 
-                      p: 1,
-                      pt: 0,
-                      '& button': { 
-                        minWidth: 'auto',
-                        padding: '4px 8px',
-                        fontSize: '0.8rem'
-                      }
-                    }}>
-                      <Tooltip title="Start this plan" arrow>
-                        <Button
-                          size="small"
-                          startIcon={<PlayArrow fontSize="small" />}
-                          onClick={() => navigate(`/play/${plan.id}`)}
-                        >
-                          Start
-                        </Button>
-                      </Tooltip>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Tooltip title="Edit this plan" arrow>
+                        <Tooltip title="Start this plan" arrow>
                           <Button
                             size="small"
-                            startIcon={<Edit fontSize="small" />}
-                            onClick={() => navigate(`/plan/${plan.id}`)}
-                            sx={{ color: 'text.secondary' }}
+                            startIcon={<PlayArrow fontSize="small" />}
+                            onClick={() => navigate(`/play/${plan.id}`)}
                           >
-                            Edit
+                            Start
                           </Button>
                         </Tooltip>
-                        <Tooltip title="Delete this plan" arrow>
-                          <Button
-                            size="small"
-                            startIcon={<Delete fontSize="small" />}
-                            onClick={() => {
-                              setDeletePlanId(plan.id);
-                              setDeleteDialogOpen(true);
-                            }}
-                            sx={{ color: 'error.main' }}
-                          >
-                            Delete
-                          </Button>
-                        </Tooltip>
-                      </Box>
-                    </CardActions>
-                  </Card>
-                );
-              })}
-            </Box>
-          )}
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="Edit this plan" arrow>
+                            <Button
+                              size="small"
+                              startIcon={<Edit fontSize="small" />}
+                              onClick={() => navigate(`/plan/${plan.id}`)}
+                              sx={{ color: 'text.secondary' }}
+                            >
+                              Edit
+                            </Button>
+                          </Tooltip>
+                          <Tooltip title="Delete this plan" arrow>
+                            <Button
+                              size="small"
+                              startIcon={<Delete fontSize="small" />}
+                              onClick={() => {
+                                setDeletePlanId(plan.id);
+                                setDeleteDialogOpen(true);
+                              }}
+                              sx={{ color: 'error.main' }}
+                            >
+                              Delete
+                            </Button>
+                          </Tooltip>
+                        </Box>
+                      </CardActions>
+                    </Card>
+                  );
+                })}
+              </Box>
+            )}
+          </Box>
         </Paper>
 
         {/* Default Plans Section */}
@@ -315,103 +316,105 @@ export default function HomeScreen({
             borderRadius: 4,
             backgroundColor: (theme) => theme.palette.secondary.light + '80',
             backdropFilter: 'blur(5px)',
-            p: 2
+            p: 0
           }}>
             <SectionHeader 
               title="Default Plans" 
               count={defaultPlans.length} 
               color="secondary"
             />
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              Tap "Copy & Customize" to quickly create your own plan based on this template.
-            </Typography>
-            <Box sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 2,
-              justifyContent: 'center'
-            }}>
-              {defaultPlans.map((plan) => {
-                const durations = getPlanDurations(plan);
-                return (
-                  <Card
-                    key={plan.id}
-                    sx={{
-                      width: 260,
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                      transform: touchedId === plan.id ? 'scale(0.98)' : 'none',
-                      boxShadow: touchedId === plan.id ? 1 : 3,
-                      '&:active': { transform: 'scale(0.98)' }
-                    }}
-                    onTouchStart={() => setTouchedId(plan.id)}
-                    onTouchEnd={() => setTouchedId(null)}
-                  >
-                    <CardContent sx={{ p: 1, pb: '0 !important', position: 'relative' }}>
-                      {/* Total Time Badge */}
-                      <Box sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        px: 1.2,
-                        borderRadius: 2,
-                        fontSize: '0.8rem'
+            <Box sx={{p:0}}>
+              <Typography variant="body2" sx={{ my: 0, mx: 2 }}>
+                Tap "Copy & Customize" to quickly create your own plan based on this template.
+              </Typography>
+              <Box sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                justifyContent: 'center'
+              }}>
+                {defaultPlans.map((plan) => {
+                  const durations = getPlanDurations(plan);
+                  return (
+                    <Card
+                      key={plan.id}
+                      sx={{
+                        width: 260,
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        transform: touchedId === plan.id ? 'scale(0.98)' : 'none',
+                        boxShadow: touchedId === plan.id ? 1 : 3,
+                        '&:active': { transform: 'scale(0.98)' }
+                      }}
+                      onTouchStart={() => setTouchedId(plan.id)}
+                      onTouchEnd={() => setTouchedId(null)}
+                    >
+                      <CardContent sx={{ p: 1, pb: '0 !important', position: 'relative' }}>
+                        {/* Total Time Badge */}
+                        <Box sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          bgcolor: 'primary.main',
+                          color: 'white',
+                          px: 1.2,
+                          borderRadius: 2,
+                          fontSize: '0.8rem'
+                        }}>
+                          <AccessTime fontSize="inherit" />
+                          <span>{durations.total}</span>
+                        </Box>
+                        
+                        <Typography variant="subtitle1" noWrap sx={{ 
+                          fontSize: '0.9rem',
+                          mb: 0.5,
+                          pr: 4
+                        }}>
+                          {plan.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary" sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5
+                        }}>
+                          Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
+                        </Typography>
+                      </CardContent>
+                      <CardActions sx={{ 
+                        justifyContent: 'space-between', 
+                        p: 0.5,
+                        px: 1,
+                        '& button': { 
+                          minWidth: 40,
+                          padding: '4px 8px'
+                        }
                       }}>
-                        <AccessTime fontSize="inherit" />
-                        <span>{durations.total}</span>
-                      </Box>
-                      
-                      <Typography variant="subtitle1" noWrap sx={{ 
-                        fontSize: '0.9rem',
-                        mb: 0.5,
-                        pr: 4
-                      }}>
-                        {plan.name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary" sx={{ 
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5
-                      }}>
-                        Lataif: {durations.lataif} | Muraqbat: {durations.muraqbat}
-                      </Typography>
-                    </CardContent>
-                    <CardActions sx={{ 
-                      justifyContent: 'space-between', 
-                      p: 0.5,
-                      px: 1,
-                      '& button': { 
-                        minWidth: 40,
-                        padding: '4px 8px'
-                      }
-                    }}>
-                      <Tooltip title="Start this template" arrow>
-                        <Button
-                          size="small"
-                          startIcon={<PlayArrow fontSize="small" />}
-                          onClick={() => navigate(`/play/${plan.id}`)}
-                        >
-                          Start
-                        </Button>
-                      </Tooltip>
-                      <Tooltip title="Make your own version" arrow>
-                        <Button
-                          size="small"
-                          startIcon={<ContentCopy fontSize="small" />}
-                          onClick={() => handleClonePlan(plan)}
-                          sx={{ fontWeight: 600 }}
-                        >
-                          Copy & Customize
-                        </Button>
-                      </Tooltip>
-                    </CardActions>
-                  </Card>
-                );
-              })}
+                        <Tooltip title="Start this template" arrow>
+                          <Button
+                            size="small"
+                            startIcon={<PlayArrow fontSize="small" />}
+                            onClick={() => navigate(`/play/${plan.id}`)}
+                          >
+                            Start
+                          </Button>
+                        </Tooltip>
+                        <Tooltip title="Make your own version" arrow>
+                          <Button
+                            size="small"
+                            startIcon={<ContentCopy fontSize="small" />}
+                            onClick={() => handleClonePlan(plan)}
+                            sx={{ fontWeight: 600 }}
+                          >
+                            Copy & Customize
+                          </Button>
+                        </Tooltip>
+                      </CardActions>
+                    </Card>
+                  );
+                })}
+              </Box>
             </Box>
           </Paper>
         )}
