@@ -51,12 +51,13 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
     }
   };
 
-
   // Back button handling
   const handleBack = () => {
     if (isRunning || isStarting) {
       setShowConfirmDialog(true);
     } else {
+      Howler.stop();
+      releaseWakeLock();
       navigate('/');
     }
   };
@@ -67,6 +68,7 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
     setIsStarting(false);
     setShowConfirmDialog(false);
     Howler.stop();
+    releaseWakeLock();
     navigate('/');
   };
 
@@ -74,7 +76,7 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
     setShowConfirmDialog(false);
   };
 
-  // Sequence generation (unchanged)
+  // Sequence generation
   const sequence = useMemo(() => {
     if (!plan) return [];
     
@@ -112,7 +114,6 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
           audioId: settings.audio.raabta || 'default_beep'
       });
     }
-      // Don't add anything if duration is 0
     }
 
     // Muraqbat
@@ -129,7 +130,7 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
     return seq;
   }, [plan, settings]);
 
-  // Add missing progress calculations
+  // Progress calculations
   const totalDuration = useMemo(() => 
     sequence.reduce((sum, item) => sum + item.duration, 0), 
     [sequence]
@@ -141,14 +142,6 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
   );
 
   const getAudioSource = (audioId) => {
-    const allAudios = [
-      ...settings.audio.start,
-      ...settings.audio.end,
-      ...settings.lataif,
-      ...settings.muraqbat
-    ];
-
-
     try {
       return require(`../../audio/${audioId}.mp3`);
     } catch {
@@ -159,8 +152,7 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
   const playAudio = (audioId, onEnd) => {
     const audioSource = getAudioSource(audioId);
     
-    Howler.stop(); // Stop any existing audio
-    console.log("playing",audioSource);
+    Howler.stop();
     const sound = new Howl({
       src: [audioSource],
       html5: true,
@@ -194,7 +186,6 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
       
       try {
         await requestWakeLock();
-        console.log("")
         if(settings.play_start){
           playAudio(settings.audio.start || 'start', () => {
             setIsStarting(false);
@@ -258,9 +249,8 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
   }
 
     return () => clearInterval(timer);
-}, [isRunning, timeLeft, currentInterval, sequence, settings.audio.end]);
+  }, [isRunning, timeLeft, currentInterval, sequence, settings.audio.end]);
 
- // Cleanup on unmount
   useEffect(() => {
     return () => {
       releaseWakeLock();
@@ -268,7 +258,6 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
     };
   }, []);
 
-  // Add formatTime function
   const formatTime = (seconds) => {
     const mins = Math.floor(Math.max(0, seconds) / 60);
     const secs = Math.max(0, seconds) % 60;
@@ -276,14 +265,21 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
   };
 
   const handleSkip = () => {
-    if (currentInterval < sequence.length - 1) {
+    if (currentInterval < sequence.length) {
       const nextInterval = currentInterval + 1;
-      setCurrentInterval(nextInterval);
-      if(!isRunning){
-        setIsRunning(true);
+
+      if (nextInterval < sequence.length) {
+        setCurrentInterval(nextInterval);
+        setTimeLeft(sequence[nextInterval].duration);
+        playAudio(sequence[nextInterval]?.audioId || 'default_beep');
+        if (!isRunning) setIsRunning(true);
+      } else {
+        setCurrentInterval(nextInterval);
+        setIsRunning(false);
+        if (settings.play_end) {
+          playAudio(settings.audio.end || 'end');
+        }
       }
-      setTimeLeft(sequence[nextInterval].duration);
-      playAudio(sequence[nextInterval]?.audioId || 'default_beep');
     }
   };
 
@@ -297,6 +293,25 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
     }
   };
 
+  const completionText = `
+آمین
+الحمدُ لِلّٰهِ رَبِّ العٰلَمینَ
+الٰہی بحرمتِ حضرتِ محمّدٍ صلّی اللّٰہُ علیہِ وآلہِ وسلّم
+الٰہی بحرمتِ حضرتِ أبو بکرٍ صدیقٍ رضی اللّٰہُ عنہُ
+الٰہی بحرمتِ حضرتِ امامِ حسنٍ بصریٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ حضرتِ داؤدٍ طائیٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ حضرتِ جنیدٍ بغدادیٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ حضرتِ عبیدُ اللّٰہِ أحرارٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ حضرتِ مولانا عبدُ الرّحمٰنِ جامیٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ حضرتِ أبو أیّوب محمّدٍ صالحٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ حضرتِ سلطانِ العارفین خواجہ اللّٰہُ دینِ مدنیٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ حضرتِ عبدُ الرّحیمِ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ قلزمِ فیوضاتِ حضرتِ مولانا اللّٰہُ یار خانٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ قاسمِ فیوضاتِ حضرتِ مولانا أمیرُ محمّدٍ أکرم أعوانٍ رحمۃُ اللّٰہِ علیہِ
+الٰہی بحرمتِ ختمِ خواجگانِ خاتمۂ من و خاتمۂ حضرتِ أمیرُ عبدُ القدیرِ أعوان مدّ ظلّہُ العالی بخیر گردان
+
+وصَلّی اللّٰہُ تعالیٰ علیٰ حبیبہِ محمّدٍ وعلیٰ آلہِ وصحبہِ أجمعین برحمتکَ یا أرحمَ الرّاحمین
+`;
 
   if (!plan) {
     return (
@@ -325,7 +340,7 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
           <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
             {plan.name} Session
           </Typography>
-          <div style={{ width: 48 }} /> {/* Spacer for alignment */}
+          <div style={{ width: 48 }} />
         </Box>
 
         {/* Confirmation Dialog */}
@@ -333,7 +348,7 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
           <DialogTitle>Confirm Navigation</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Are you sure you want to leave? The current session will be lost.
+              Are you sure you want to leave? The current session will be aborted.
             </DialogContentText>
           </DialogContent>
           <DialogActions>
@@ -344,73 +359,115 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
           </DialogActions>
         </Dialog>
 
-        <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
-          {sequence[currentInterval]?.name || 'Session Complete'}
-          {sequence[currentInterval]?.duration === 0 && ' (Skipped)'}
-        </Typography>
+        {currentInterval < sequence.length ? (
+          <>
+            <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
+              {sequence[currentInterval]?.name || 'Session Complete'}
+              {sequence[currentInterval]?.duration === 0 && ' (Skipped)'}
+            </Typography>
 
-        <Box sx={{ 
-          height: 200,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 3,
-          mb: 4
-        }}>
-          <Typography variant="h1" component="div" sx={{ fontFamily: 'monospace' }}>
-            {formatTime(timeLeft)}
-          </Typography>
-          
-          <LinearProgress 
-            variant="determinate" 
-            value={progress}
-            sx={{ height: 10, width: '80%', borderRadius: 5 }}
-          />
-        </Box>
+            <Box sx={{ 
+              height: 200,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 3,
+              mb: 4
+            }}>
+              <Typography variant="h1" component="div" sx={{ fontFamily: 'monospace' }}>
+                {formatTime(timeLeft)}
+              </Typography>
+              
+              <LinearProgress 
+                variant="determinate" 
+                value={progress}
+                sx={{ height: 10, width: '80%', borderRadius: 5 }}
+              />
+            </Box>
+
+            <Typography variant="h6" color="textSecondary">
+              Next: {sequence[currentInterval + 1]?.name || 'Session Complete'}
+            </Typography>
+          </>
+        ) : (
+          <Box sx={{ 
+            minHeight: 300,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 2
+          }}>
+            <Typography 
+              variant="h5" 
+              component="div"
+              sx={{ 
+                whiteSpace: 'pre-line',
+                textAlign: 'center',
+                fontFamily: "'Noto Naskh Arabic', serif",
+                lineHeight: 2,
+                fontSize: '1.4rem',
+                direction: 'rtl'
+              }}
+            >
+              {completionText}
+            </Typography>
+          </Box>
+        )}
 
         {/* Controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 4 }}>
-          <IconButton 
-            color="secondary" 
-            size="large"
-            sx={{ fontSize: '3rem' }}
-            onClick={handleSkipBack}
-            disabled={currentInterval <= 0}
-          >
-            <SkipPrevious fontSize="inherit" />
-          </IconButton>
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4 }}>
+          {currentInterval < sequence.length ? (
+            <>
+              <IconButton 
+                color="secondary" 
+                size="large"
+                sx={{ fontSize: '3rem' }}
+                onClick={handleSkipBack}
+                disabled={currentInterval <= 0}
+              >
+                <SkipPrevious fontSize="inherit" />
+              </IconButton>
 
-          <IconButton 
-            color="primary" 
-            size="large"
-            sx={{ fontSize: '3rem' }}
-            onClick={handlePlayPause}
-            disabled={isStarting}
-          >
-            {isStarting ? (
-              <Pause fontSize="inherit" />
-            ) : isRunning ? (
-              <Pause fontSize="inherit" />
-            ) : (
-              <PlayArrow fontSize="inherit" />
-            )}
-          </IconButton>
+              <IconButton 
+                color="primary" 
+                size="large"
+                sx={{ fontSize: '3rem' }}
+                onClick={handlePlayPause}
+                disabled={isStarting}
+              >
+                {isStarting ? (
+                  <Pause fontSize="inherit" />
+                ) : isRunning ? (
+                  <Pause fontSize="inherit" />
+                ) : (
+                  <PlayArrow fontSize="inherit" />
+                )}
+              </IconButton>
 
-          <IconButton 
-            color="secondary" 
-            size="large"
-            sx={{ fontSize: '3rem' }}
-            onClick={handleSkip}
-            disabled={currentInterval >= sequence.length - 1}
-          >
-            <SkipNext fontSize="inherit" />
-          </IconButton>
+              <IconButton 
+                color="secondary" 
+                size="large"
+                sx={{ fontSize: '3rem' }}
+                onClick={handleSkip}
+                disabled={currentInterval >= sequence.length}
+              >
+                <SkipNext fontSize="inherit" />
+              </IconButton>
+            </>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={handleBack}
+              sx={{ fontSize: '1.5rem', mt: 3 }}
+            >
+              End Session
+            </Button>
+          )}
         </Box>
-
-        <Typography variant="h6" color="textSecondary">
-          Next: {sequence[currentInterval + 1]?.name || 'Session Complete'}
-        </Typography>
       </Paper>
     </Container>
   );
