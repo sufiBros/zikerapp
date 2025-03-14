@@ -54,6 +54,7 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
   // Back button handling
   const handleBack = () => {
     if (isRunning || isStarting) {
+      alert(isStarting);
       setShowConfirmDialog(true);
     } else {
       Howler.stop();
@@ -240,6 +241,7 @@ useEffect(() => {
             if(settings.play_end) {
               playAudio(settings.audio.end || 'end', () => {
                 setIsRunning(false);
+                setIsStarting(false);
               });
             } else {
               setIsRunning(false);
@@ -280,6 +282,7 @@ useEffect(() => {
       } else {
         setCurrentInterval(nextInterval);
         setIsRunning(false);
+        setIsStarting(false);
         if (settings.play_end) {
           playAudio(settings.audio.end || 'end');
         }
