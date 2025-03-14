@@ -215,32 +215,36 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
     }
   }, [currentInterval, sequence, isRunning]);
 
-  useEffect(() => {
-    let timer;
+useEffect(() => {
+  let timer;
 
-    if (isRunning && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft(prev => {
-          const newTime = prev - 1;
+  if (isRunning && timeLeft > 0) {
+    timer = setInterval(() => {
+      setTimeLeft(prev => {
+        const newTime = prev - 1;
 
         if (newTime <= 0) {
-      let nextInterval = currentInterval + 1;
-      
-          // Skip any intervals with 0 duration
-      while (nextInterval < sequence.length && sequence[nextInterval].duration <= 0) {
-        nextInterval++;
-      }
-
-      if (nextInterval < sequence.length) {
-        setCurrentInterval(nextInterval);
-            playAudio(sequence[nextInterval]?.audioId || 'default_beep');
-      } else {
-            if(settings.play_end){
-            playAudio(settings.audio.end || 'end', () => {  setIsRunning(false);})}else{
-              setIsRunning(false);
-        }
+          let nextInterval = currentInterval + 1;
           
-      }
+          // Skip any intervals with 0 duration
+          while (nextInterval < sequence.length && sequence[nextInterval].duration <= 0) {
+            nextInterval++;
+          }
+
+          if (nextInterval < sequence.length) {
+            setCurrentInterval(nextInterval);
+            playAudio(sequence[nextInterval]?.audioId || 'default_beep');
+          } else {
+            // This is the crucial change - update currentInterval even when ending naturally
+            setCurrentInterval(nextInterval);
+            if(settings.play_end) {
+              playAudio(settings.audio.end || 'end', () => {
+                setIsRunning(false);
+              });
+            } else {
+              setIsRunning(false);
+            }
+          }
           return 0;
         }
         return newTime;
@@ -248,8 +252,8 @@ export default function TimerScreen({ defaultPlans = [], userPlans = [], setting
     }, 1000);
   }
 
-    return () => clearInterval(timer);
-  }, [isRunning, timeLeft, currentInterval, sequence, settings.audio.end]);
+  return () => clearInterval(timer);
+}, [isRunning, timeLeft, currentInterval, sequence, settings.audio.end]);
 
   useEffect(() => {
     return () => {
